@@ -1,0 +1,125 @@
+package rules;
+
+import com.ftn.sbnz.model.models.Driver;
+import com.ftn.sbnz.model.models.CMRDocument;
+import com.ftn.sbnz.model.models.TransportPermit;
+import com.ftn.sbnz.model.models.Violation;
+import com.ftn.sbnz.model.models.DriverValidity;
+import com.ftn.sbnz.model.models.VehicleValidity;
+import com.ftn.sbnz.model.models.PermitStatus;
+import com.ftn.sbnz.model.enums.ViolationType;
+import com.ftn.sbnz.model.enums.ValidityStatus;
+import com.ftn.sbnz.model.enums.PermitType;
+
+import java.time.LocalDate;
+
+
+rule "Validate CEMT Permit"
+    salience 100
+    when
+        DriverValidity(status != ValidityStatus.ARREST)
+        VehicleValidity()
+        TransportPermit(type == PermitType.CEMT,
+                        expiryDate != null,
+                        expiryDate.isAfter(LocalDate.now()))
+        not PermitStatus()
+    then
+        insert(new PermitStatus(ValidityStatus.VALID));
+end
+
+
+rule "Bilateral permit covers route"
+    salience 90
+    when
+        DriverValidity(status != ValidityStatus.ARREST)
+        VehicleValidity()
+        not TransportPermit(type == PermitType.CEMT,
+                            expiryDate != null,
+                            expiryDate.isAfter(LocalDate.now()))
+        $driver: Driver($citizenship: citizenship)
+        $cmr: CMRDocument($origin: originCountry, $destination: destinationCountry)
+        TransportPermit(type == PermitType.BILATERAL,
+                        expiryDate != null,
+                        expiryDate.isAfter(LocalDate.now()),
+                        coveredRoutes != null,
+                        coveredRoutes.contains($citizenship))
+        eval($origin.equals($citizenship) || $origin.equals($destination))
+        not PermitStatus()
+    then
+        insert(new PermitStatus(ValidityStatus.VALID));
+end
+
+
+rule "Bilateral permit does not cover route"
+    salience 89
+    when
+        DriverValidity(status != ValidityStatus.ARREST)
+        VehicleValidity()
+        not TransportPermit(type == PermitType.CEMT,
+                            expiryDate != null,
+                            expiryDate.isAfter(LocalDate.now()))
+        $driver: Driver($citizenship: citizenship)
+        $cmr: CMRDocument($origin: originCountry, $destination: destinationCountry)
+        TransportPermit(type == PermitType.BILATERAL,
+                        expiryDate != null,
+                        expiryDate.isAfter(LocalDate.now()),
+                        coveredRoutes != null,
+                        coveredRoutes.contains($citizenship))
+        eval(!$origin.equals($citizenship) && !$origin.equals($destination))
+        not PermitStatus()
+        not Violation(type == ViolationType.MISSING_THIRD_COUNTRY_PERMIT)
+    then
+        insert(new Violation(ViolationType.MISSING_THIRD_COUNTRY_PERMIT, "CEMT pravilnik, Čl. XXX", 100.0, false,
+                             "Bilateralna dozvola ne pokriva robu iz treće zemlje. "
+                             + "Zemlja porekla robe: " + $origin
+                             + ", zemlja vozača: " + $citizenship
+                             + ". Potrebna CEMT dozvola ili dozvola za trece zemlje."));
+        insert(new PermitStatus(ValidityStatus.FORBIDDEN));
+end
+
+
+rule "Transit permit - vehicle passes through BiH"
+    salience 80
+    when
+        DriverValidity(status != ValidityStatus.ARREST)
+        VehicleValidity()
+        not TransportPermit(type == PermitType.CEMT,
+                            expiryDate != null,
+                            expiryDate.isAfter(LocalDate.now()))
+        not TransportPermit(type == PermitType.BILATERAL,
+                            expiryDate != null,
+                            expiryDate.isAfter(LocalDate.now()))
+        $cmr: CMRDocument(destinationCountry != "BA")
+        TransportPermit(type == PermitType.TRANSIT,
+                        expiryDate != null,
+                        expiryDate.isAfter(LocalDate.now()))
+        not PermitStatus()
+    then
+        insert(new PermitStatus(ValidityStatus.VALID));
+end
+
+
+rule "No valid route permit"
+    salience 70
+    when
+        DriverValidity(status != ValidityStatus.ARREST)
+        VehicleValidity()
+        not TransportPermit(type == PermitType.CEMT,
+                                    expiryDate != null,
+                                    expiryDate.isAfter(LocalDate.now()))
+        not TransportPermit(type == PermitType.BILATERAL,
+                            expiryDate != null,
+                            expiryDate.isAfter(LocalDate.now()))
+        not TransportPermit(type == PermitType.TRANSIT,
+                            expiryDate != null,
+                            expiryDate.isAfter(LocalDate.now()))
+        not TransportPermit(type == PermitType.THIRD_COUNTRY,
+                            expiryDate != null,
+                            expiryDate.isAfter(LocalDate.now()))
+        not PermitStatus()
+        not Violation(type == ViolationType.MISSING_THIRD_COUNTRY_PERMIT)
+    then
+        insert(new Violation(ViolationType.MISSING_THIRD_COUNTRY_PERMIT, "CEMT pravilnik, Čl. XXX", 100.0, false,
+                            "Ne postoji nijedna validna dozvola za prevoz na ovoj ruti. Zabrana prelaska do otklanjanja nedostatka."));
+        insert(new PermitStatus(ValidityStatus.FORBIDDEN));
+end

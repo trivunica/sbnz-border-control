@@ -1,0 +1,213 @@
+package rules;
+
+global java.time.LocalDate today;
+global java.time.LocalDate ninetyDaysFromNow;
+
+import com.ftn.sbnz.model.models.Driver;
+import com.ftn.sbnz.model.models.DrivingLicence;
+import com.ftn.sbnz.model.models.IdentificationDocument;
+import com.ftn.sbnz.model.models.Violation;
+import com.ftn.sbnz.model.models.DriverValidity;
+import com.ftn.sbnz.model.enums.ViolationType;
+import com.ftn.sbnz.model.enums.ValidityStatus;
+
+import java.time.LocalDate;
+
+
+rule "Expired driving licence - domestic driver"
+    salience 100
+    when
+        $driver: Driver(foreignCitizen == false)
+        $licence: DrivingLicence(expiryDate != null, expiryDate.isBefore(LocalDate.now()))
+        not Violation(type == ViolationType.EXPIRED_DRIVING_LICENCE)
+    then
+        insert(new Violation(ViolationType.EXPIRED_DRIVING_LICENCE, "Čl. XXX", 200.0, false,
+                             "Istekla vozacka dozvola. Vozac mora biti zamenjen pre nastavka puta."));
+end
+
+
+rule "Expired driving licence - foreign driver"
+    salience 100
+    when
+        $driver: Driver(foreignCitizen == true)
+        $licence: DrivingLicence(expiryDate != null, expiryDate.isBefore(LocalDate.now()))
+        not Violation(type == ViolationType.EXPIRED_DRIVING_LICENCE)
+    then
+        insert(new Violation(ViolationType.EXPIRED_DRIVING_LICENCE, "Čl. XXX", 400.0, false,
+                             "Istekla vozacka dozvola. Vozac mora biti zamenjen pre nastavka puta. Iznos kazne je dupliran za stranog drzavljanina."));
+end
+
+
+rule "Invalid driving category"
+    salience 100
+    when
+        $licence: DrivingLicence(category != null, category != "CE")
+        not Violation(type == ViolationType.INVALID_DRIVING_CATEGORY)
+    then
+        insert(new Violation(ViolationType.INVALID_DRIVING_CATEGORY, "Čl. 234a ZOBS", 700.0, false,
+                             "Vozacka dozvola nema kategoriju CE koja je obavezna za teretna vozila"));
+end
+
+
+rule "Expired passport"
+    salience 100
+    when
+        $id: IdentificationDocument(type == "PASSPORT",
+                                     expiryDate != null,
+                                     expiryDate.isBefore(LocalDate.now()))
+        not Violation(type == ViolationType.EXPIRED_PASSPORT)
+    then
+        insert(new Violation(ViolationType.EXPIRED_PASSPORT, "Čl. XXX", 300.0, false,
+                             "Istekao pasos. Zabrana prelaska."));
+end
+
+
+rule "Expired ID card"
+    salience 100
+    when
+        $id: IdentificationDocument(type == "ID_CARD",
+                                     expiryDate != null,
+                                     expiryDate.isBefore(LocalDate.now()))
+        not Violation(type == ViolationType.EXPIRED_ID_CARD)
+    then
+        insert(new Violation(ViolationType.EXPIRED_ID_CARD, "Čl. XXX", 300.0, false,
+                             "Istekla licna karta. Zabrana prelaska."));
+end
+
+
+rule "Passport expiring soon - foreign driver"
+    salience 100
+    when
+        $driver: Driver(foreignCitizen == true)
+        $id: IdentificationDocument(type == "PASSPORT",
+                                     expiryDate != null,
+                                     expiresAfter(today),
+                                     expiresBefore(ninetyDaysFromNow))
+        not Violation(type == ViolationType.PASSPORT_SHORT_VALIDITY)
+    then
+        insert(new Violation(ViolationType.PASSPORT_SHORT_VALIDITY, "Čl. XXX", 300.0, false,
+                             "Pasos istice u roku od 90 dana. Zabrana prelaska"));
+end
+
+
+rule "Driver on Interpol warrant"
+    salience 200
+    when
+        $driver: Driver(interpolWarrant == true)
+        not Violation(type == ViolationType.INTERPOL_WARRANT)
+    then
+        insert(new Violation(ViolationType.INTERPOL_WARRANT, "Interpol procedura primopredaje", 0.0, false,
+                             "Vozac na Interpol potrazi. Pokrece se procedura primopredaje. Izdaje se potvrda o lisavanju slobode u 3 primerka"));
+end
+
+
+rule "Driver on domestic warrant"
+    salience 190
+    when
+        $driver: Driver(domesticWarrant == true)
+        not Violation(type == ViolationType.DOMESTIC_WARRANT)
+    then
+        insert(new Violation(ViolationType.DOMESTIC_WARRANT, "Zakon o krivicnom postupku BiH", 0.0, false,
+                             "Vozac na domacoj potrazi. Kontaktira se institucija koja je raspisala potragu. Vozac se zadrzava do povratne informacije."));
+end
+
+
+rule "Suspected document forgery"
+    salience 100
+    when
+        $driver: Driver(photoMatches == false)
+        not Violation(type == ViolationType.SUSPECTED_FORGERY)
+    then
+        insert(new Violation(ViolationType.SUSPECTED_FORGERY, "Čl. XXX", 0.0, false,
+                             "Fotografija na dokumentu ne odgovara licu vozaca. Vozilo se zadrzava, kontaktira se nadredjeni."));
+end
+
+
+rule "Reported lost or stolen document"
+    salience 100
+    when
+        $driver: Driver(documentReportedStolen == true)
+        not Violation(type == ViolationType.STOLEN_LOST_DOCUMENT)
+    then
+        insert(new Violation(ViolationType.STOLEN_LOST_DOCUMENT, "Čl. XXX", 0.0, false,
+                             "Dokument ranije prijavljen kao izgubljen ili ukraden. Zabrana prelaska, zadrzavanje lica, kontaktiranje nadredjenog."));
+end
+
+
+rule "Foreign driver without visa or supplementary document"
+    salience 100
+    when
+        $driver: Driver(foreignCitizen == true,
+                         hasVisa == false,
+                         hasSupplementaryDocument == false)
+        not Violation(type == ViolationType.MISSING_VISA_SUPPLEMENT)
+    then
+        insert(new Violation(ViolationType.MISSING_VISA_SUPPLEMENT, "Čl. XXX zakona o strancima BiH", 0.0, false,
+                             "Strani vozac nema vizu niti dopunski propusni dokument (sengen, americka ili EU viza). Zabrana prelaska, izdavanje potvrde."));
+end
+
+
+rule "Insufficient financial funds for the reported stay"
+    salience 100
+    when
+        $driver: Driver(foreignCitizen == true,
+                         financialFunds != null,
+                         plannedStayDays != null)
+        eval($driver.getFinancialFunds() < $driver.getPlannedStayDays() * 75.0)
+        not Violation(type == ViolationType.INSUFFICIENT_FUNDS)
+    then
+        insert(new Violation(
+                    ViolationType.INSUFFICIENT_FUNDS, "Čl. XXX zakona o strancima BiH", 0.0, false,
+                    "Strani državljanin nema dovoljna finansijska sredstva. " +
+                    "Potrebno najmanje 75 EUR po danu boravka. Za prijavljeni boravak od: " +
+                    $driver.getPlannedStayDays() + " dana, potrebno: " +
+                    ($driver.getPlannedStayDays() * 75.0) + " EUR. Vozac poseduje: " +
+                    $driver.getFinancialFunds() + " EUR."
+                ));
+end
+
+
+rule "Determine DriverValidity ARREST"
+    salience 50
+    when
+        Violation(type == ViolationType.INTERPOL_WARRANT
+               || type == ViolationType.DOMESTIC_WARRANT)
+        not DriverValidity()
+    then
+        insert(new DriverValidity(ValidityStatus.ARREST));
+end
+
+
+rule "Determine DriverValidity FORBIDDEN"
+    salience 49
+    when
+        not Violation(isArrestType())
+        Violation(isDriverForbiddenType())
+        not DriverValidity()
+    then
+        insert(new DriverValidity(ValidityStatus.FORBIDDEN));
+end
+
+
+rule "Determine DriverValidity PROBLEM"
+    salience 48
+    when
+        not Violation(isArrestType())
+        not Violation(isDriverForbiddenType())
+        Violation(type == ViolationType.EXPIRED_DRIVING_LICENCE)
+        not DriverValidity()
+    then
+        insert(new DriverValidity(ValidityStatus.PROBLEM));
+end
+
+
+rule "Determine DriverValidity VALID"
+    salience 47
+    when
+        not Violation(isArrestType())
+        not Violation(isDriverForbiddenType())
+        not Violation(type == ViolationType.EXPIRED_DRIVING_LICENCE)
+        not DriverValidity()
+    then
+        insert(new DriverValidity(ValidityStatus.VALID));
+end

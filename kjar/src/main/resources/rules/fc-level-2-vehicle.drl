@@ -1,0 +1,140 @@
+package rules;
+
+import com.ftn.sbnz.model.models.Driver;
+import com.ftn.sbnz.model.models.VehicleRegistration;
+import com.ftn.sbnz.model.models.CMRDocument;
+import com.ftn.sbnz.model.models.LiveWeightMeasurement;
+import com.ftn.sbnz.model.models.Violation;
+import com.ftn.sbnz.model.models.DriverValidity;
+import com.ftn.sbnz.model.models.VehicleValidity;
+import com.ftn.sbnz.model.enums.ViolationType;
+import com.ftn.sbnz.model.enums.ValidityStatus;
+
+import java.time.LocalDate;
+
+
+rule "Expired vehicle registration"
+    salience 100
+    when
+        DriverValidity(status != ValidityStatus.ARREST)
+        $vr: VehicleRegistration(expiryDate != null, expiryDate.isBefore(LocalDate.now()))
+        not Violation(type == ViolationType.EXPIRED_REGISTRATION)
+    then
+        insert(new Violation(ViolationType.EXPIRED_REGISTRATION, "Čl. XXX", 300.0, false,
+                             "Istekla saobracajna dozvola. Vozilo se vraca. Vozac sa validnim licnim dokumentima moze peske preci granicu."));
+end
+
+
+rule "Visual saf of the trailer - scale required"
+    salience 100
+    when
+        DriverValidity(status != ValidityStatus.ARREST)
+        LiveWeightMeasurement(visualSag == true, measuredTotalWeight == null)
+        not Violation(type == ViolationType.PENDING_WEIGHT_CHECK)
+    then
+        insert(new Violation(ViolationType.PENDING_WEIGHT_CHECK, "Čl. XXX", 0.0, false,
+                              "Primeceno vizuelno ulegnuce prikolice. Vozilo se odvodi na vagu radi provere pretovara."));
+end
+
+
+rule "Trailer overload - domestic driver"
+    salience 100
+    when
+        DriverValidity(status != ValidityStatus.ARREST)
+        $driver: Driver(foreignCitizen == false)
+        $cmr: CMRDocument($goodsWeight : goodsWeight)
+        $vr: VehicleRegistration($trailerCapacity : trailerCapacity)
+        eval($goodsWeight != null && $trailerCapacity != null && $goodsWeight > $trailerCapacity)
+        not Violation(type == ViolationType.TRAILER_OVERLOAD)
+    then
+        double excess = $goodsWeight - $trailerCapacity;
+        insert(new Violation(ViolationType.TRAILER_OVERLOAD, "Čl. XXX", 500.0, true,
+                             "Pretovar prikolice. Masa robe: " + $goodsWeight + " kg, dozvoljena nosivost: " + $trailerCapacity +
+                             " kg, visak: " + excess + " kg. Potreban istovar ili preraspodela tereta."));
+end
+
+
+rule "Trailer overload - foreign driver"
+    salience 100
+    when
+        DriverValidity(status != ValidityStatus.ARREST)
+        $driver: Driver(foreignCitizen == true)
+        $cmr: CMRDocument($goodsWeight : goodsWeight)
+        $vr: VehicleRegistration($trailerCapacity : trailerCapacity)
+        eval($goodsWeight != null && $trailerCapacity != null && $goodsWeight > $trailerCapacity)
+        not Violation(type == ViolationType.TRAILER_OVERLOAD)
+    then
+        double excess = $goodsWeight - $trailerCapacity;
+        insert(new Violation(ViolationType.TRAILER_OVERLOAD, "Čl. XXX", 1000.0, true,
+                             "Pretovar prikolice. Masa robe: " + $goodsWeight + " kg, dozvoljena nosivost: " + $trailerCapacity +
+                             " kg, visak: " + excess + " kg. Potreban istovar ili preraspodela tereta. Kazna duplirana za stranog vozaca."));
+end
+
+
+rule "Total weight overload - domestic driver"
+    salience 100
+    when
+        DriverValidity(status != ValidityStatus.ARREST)
+        $driver: Driver(foreignCitizen == false)
+        $cmr: CMRDocument($goodsWeight : goodsWeight)
+        $vr: VehicleRegistration($truckWeight : truckWeight)
+        eval($goodsWeight != null && $truckWeight != null && ($goodsWeight + $truckWeight) > 40000)
+        not Violation(type == ViolationType.TOTAL_WEIGHT_OVERLOAD)
+    then
+        double totalWeight = $goodsWeight + $truckWeight;
+        double excess = totalWeight - 40000;
+        insert(new Violation(ViolationType.TOTAL_WEIGHT_OVERLOAD, "Čl. XXX", 500.0, true,
+                             "Pretovar ukupne mase vozila. Ukupna masa: " + totalWeight + " kg, zakonski limit: 40 000 kg, visak: " + excess + " kg."));
+end
+
+
+rule "Total weight overload - foreign driver"
+    salience 100
+    when
+        DriverValidity(status != ValidityStatus.ARREST)
+        $driver: Driver(foreignCitizen == true)
+        $cmr: CMRDocument($goodsWeight : goodsWeight)
+        $vr: VehicleRegistration($truckWeight : truckWeight)
+        eval($goodsWeight != null && $truckWeight != null && ($goodsWeight + $truckWeight) > 40000)
+        not Violation(type == ViolationType.TOTAL_WEIGHT_OVERLOAD)
+    then
+        double totalWeight = $goodsWeight + $truckWeight;
+        double excess = totalWeight - 40000;
+        insert(new Violation(ViolationType.TOTAL_WEIGHT_OVERLOAD, "Čl. XXX", 1000.0, true,
+                             "Pretovar ukupne mase vozila. Ukupna masa: " + totalWeight + " kg, zakonski limit: 40 000 kg, visak: " + excess + " kg. Kazna duplirana za stranog vozaca."));
+end
+
+
+rule "Determine VehicleValidity FORBIDDEN"
+    salience 50
+    when
+        DriverValidity(status != ValidityStatus.ARREST)
+        Violation(isVehicleForbiddenType())
+        not VehicleValidity()
+    then
+        insert(new VehicleValidity(ValidityStatus.FORBIDDEN));
+end
+
+
+rule "Determine VehicleValidity PROBLEM"
+    salience 49
+    when
+        DriverValidity(status != ValidityStatus.ARREST)
+        not Violation(isVehicleForbiddenType())
+        Violation(isVehicleProblemType())
+        not VehicleValidity()
+    then
+        insert(new VehicleValidity(ValidityStatus.PROBLEM));
+end
+
+
+rule "Determine VehicleValidity VALID"
+    salience 48
+    when
+        DriverValidity(status != ValidityStatus.ARREST)
+        not Violation(isVehicleForbiddenType())
+        not Violation(isVehicleProblemType())
+        not VehicleValidity()
+    then
+        insert(new VehicleValidity(ValidityStatus.VALID));
+end
