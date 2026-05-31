@@ -3,7 +3,6 @@ package rules;
 import com.ftn.sbnz.model.models.Violation;
 import com.ftn.sbnz.model.models.FinalDecision;
 import com.ftn.sbnz.model.models.DriverValidity;
-import com.ftn.sbnz.model.models.VehicleValidity;
 import com.ftn.sbnz.model.models.PermitStatus;
 import com.ftn.sbnz.model.enums.ViolationType;
 import com.ftn.sbnz.model.enums.ActionRecommendation;
@@ -32,8 +31,6 @@ end
 rule "Final decision FORBID ENTRY"
     salience 190
     when
-        DriverValidity(status != ValidityStatus.ARREST)
-        VehicleValidity()
         PermitStatus()
         Violation(canContinue == false)
         $totalFine: Double() from accumulate(
@@ -59,8 +56,6 @@ end
 rule "Final decision HOLD FINE"
     salience 180
     when
-        DriverValidity(status != ValidityStatus.ARREST)
-        VehicleValidity()
         PermitStatus()
         not Violation(canContinue == false)
         exists Violation()
@@ -82,8 +77,6 @@ end
 rule "Final decision ALLOW"
     salience 170
     when
-        DriverValidity(status != ValidityStatus.ARREST)
-        VehicleValidity()
         PermitStatus()
         not Violation()
         not FinalDecision()

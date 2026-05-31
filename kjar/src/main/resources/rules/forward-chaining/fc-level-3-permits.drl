@@ -4,7 +4,6 @@ import com.ftn.sbnz.model.models.Driver;
 import com.ftn.sbnz.model.models.CMRDocument;
 import com.ftn.sbnz.model.models.TransportPermit;
 import com.ftn.sbnz.model.models.Violation;
-import com.ftn.sbnz.model.models.DriverValidity;
 import com.ftn.sbnz.model.models.VehicleValidity;
 import com.ftn.sbnz.model.models.PermitStatus;
 import com.ftn.sbnz.model.enums.ViolationType;
@@ -17,7 +16,6 @@ import java.time.LocalDate;
 rule "Validate CEMT Permit"
     salience 100
     when
-        DriverValidity(status != ValidityStatus.ARREST)
         VehicleValidity()
         TransportPermit(type == PermitType.CEMT,
                         expiryDate != null,
@@ -31,7 +29,6 @@ end
 rule "Bilateral permit covers route"
     salience 90
     when
-        DriverValidity(status != ValidityStatus.ARREST)
         VehicleValidity()
         not TransportPermit(type == PermitType.CEMT,
                             expiryDate != null,
@@ -53,7 +50,6 @@ end
 rule "Bilateral permit does not cover route"
     salience 89
     when
-        DriverValidity(status != ValidityStatus.ARREST)
         VehicleValidity()
         not TransportPermit(type == PermitType.CEMT,
                             expiryDate != null,
@@ -81,7 +77,6 @@ end
 rule "Transit permit - vehicle passes through BiH"
     salience 80
     when
-        DriverValidity(status != ValidityStatus.ARREST)
         VehicleValidity()
         not TransportPermit(type == PermitType.CEMT,
                             expiryDate != null,
@@ -102,7 +97,6 @@ end
 rule "No valid route permit"
     salience 70
     when
-        DriverValidity(status != ValidityStatus.ARREST)
         VehicleValidity()
         not TransportPermit(type == PermitType.CEMT,
                                     expiryDate != null,

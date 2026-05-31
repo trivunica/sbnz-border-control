@@ -17,6 +17,10 @@ public class ScenarioRunner implements CommandLineRunner {
     @Autowired
     private BorderCrossingService borderCrossingService;
 
+    @Autowired
+    private CepService cepService;
+
+
     @Override
     public void run(String... args) {
         printHeader("Ekspertski sistem za kontrolu teretnih vozila na graničnom prelazu");
@@ -28,6 +32,8 @@ public class ScenarioRunner implements CommandLineRunner {
         scenario5_TrailerOverload();
         scenario6_ExpiredIDValidVehicle();
         scenario7_InsufficientFunds();
+
+        runCepDemo();
     }
 
     // ************************************************************************************
@@ -371,7 +377,7 @@ public class ScenarioRunner implements CommandLineRunner {
         id.setExpiryDate(LocalDate.of(2023, 6, 1));
 
         VehicleRegistration vr = new VehicleRegistration();
-        vr.setRegistrationNumber("SA-100-BA");
+        vr.setRegistrationNumber("NS-100-BA");
         vr.setExpiryDate(LocalDate.now().plusYears(1));
         vr.setTrailerCapacity(24000.0);
         vr.setTruckWeight(8000.0);
@@ -462,6 +468,57 @@ public class ScenarioRunner implements CommandLineRunner {
         request.setTransportPermits(List.of(cemt));
 
         printResult(borderCrossingService.evaluate(request));
+    }
+
+
+    // ************************************************************************************
+    // CEP DEMONSTRATION
+    // ************************************************************************************
+    private void runCepDemo() {
+        printHeader("CEP - Detekcija sumnjivih obrazaca");
+        long now = System.currentTimeMillis();
+
+        // frequent border crossings
+        System.out.println("\nVozilo NS-123-AB prelazi 4 puta u roku od 6 sati");
+        cepService.registerCrossing(new CrossingEvent(
+                "NS-123-AB", "RS-P-001", "SEPAK", "Firma DOO", "BA", now - 5 * 3600 * 1000L));
+        cepService.registerCrossing(new CrossingEvent(
+                "NS-123-AB", "RS-P-001", "SEPAK", "Firma DOO", "BA", now - 3 * 3600 * 1000L));
+        cepService.registerCrossing(new CrossingEvent(
+                "NS-123-AB", "RS-P-001", "SEPAK", "Firma DOO", "BA", now - 3600 * 1000L));
+        cepService.registerCrossing(new CrossingEvent(
+                "NS-123-AB", "RS-P-001", "SEPAK", "Firma DOO", "BA", now));
+
+        // border avoidance
+        System.out.println("Vozilo BG-456-AB izbegava isti granicni prelaz");
+        cepService.registerCrossing(new CrossingEvent(
+                "BG-456-AB", "BA-P-002", "SEPAK", "Kompanija AD", "HR", now - 12 * 3600 * 1000L));
+        cepService.registerCrossing(new CrossingEvent(
+                "BG-456-AB", "BA-P-002", "BRATUNAC", "Kompanija AD", "HR", now - 2 * 3600 * 1000L));
+
+        // coordinated group
+        System.out.println("Koordinisana grupa");
+        long base = now - 20 * 60 * 1000L;
+        cepService.registerCrossing(new CrossingEvent(
+                "NS-001-BA", "BA-P-010", "RACA", "ABC DOO", "DE", base));
+        cepService.registerCrossing(new CrossingEvent(
+                "NS-002-BA", "BA-P-011", "RACA", "ABC DOO", "DE", base + 5 * 60 * 1000L));
+        cepService.registerCrossing(new CrossingEvent(
+                "NS-003-BA", "BA-P-012", "RACA", "ABC DOO", "DE", base + 10 * 60 * 1000L));
+        cepService.registerCrossing(new CrossingEvent(
+                "NS-004-BA", "BA-P-013", "RACA", "ABC DOO", "DE", base + 15 * 60 * 1000L));
+
+        System.out.println("\n  Detektovani alarmi:");
+        List<CepAlarm> alarms = cepService.getActiveAlarms();
+        if (alarms.isEmpty()) {
+            System.out.println("    Nema aktivnih alarma.");
+        } else {
+            alarms.forEach(a -> {
+                System.out.println("\n    [" + a.getType() + "]");
+                System.out.println("      Vozilo  : " + a.getPlateNumber());
+                System.out.println("      Poruka  : " + a.getMessage());
+            });
+        }
     }
 
 

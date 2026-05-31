@@ -1,0 +1,79 @@
+package cep
+
+import com.ftn.sbnz.model.models.CrossingEvent;
+import com.ftn.sbnz.model.models.CepAlarm;
+import com.ftn.sbnz.model.enums.CepAlarmType;
+
+
+rule "CEP - frequent crossings"
+    when
+        $e : CrossingEvent($plate : plateNumber, $ts : timestamp)
+        Number(intValue >= 3) from accumulate(
+            $other : CrossingEvent(
+                plateNumber == $plate,
+                this != $e,
+                timestamp <= $ts,
+                timestamp >= ($ts - 21600000)
+            ),
+            count($other)
+        )
+        not CepAlarm(plateNumber == $plate,
+                     type == CepAlarmType.FREQUENT_CROSSINGS)
+    then
+        insert(new CepAlarm(CepAlarmType.FREQUENT_CROSSINGS, $plate,
+            "Vozilo " + $plate + " je preslo granicu vise od 3 puta u poslednjih 6 sati.",
+            System.currentTimeMillis()));
+end
+
+
+rule "CEP - coordinated group"
+    when
+        $e : CrossingEvent(
+            $company : companyName,
+            $border  : borderCrossingId,
+            $dest    : destinationCountry,
+            $ts      : timestamp
+        )
+        Number(intValue >= 3) from accumulate(
+            $other : CrossingEvent(
+                companyName == $company,
+                borderCrossingId == $border,
+                destinationCountry == $dest,
+                this != $e,
+                timestamp >= ($ts - 1800000),
+                timestamp <= $ts
+            ),
+            count($other)
+        )
+        not CepAlarm(plateNumber == $e.plateNumber,
+                     type == CepAlarmType.COORDINATED_GROUP)
+    then
+        insert(new CepAlarm(CepAlarmType.COORDINATED_GROUP, $e.getPlateNumber(),
+            "Koordinisana grupa: " + $company + ", prelaz " + $border + ", dest " + $dest,
+            System.currentTimeMillis()));
+end
+
+
+rule "CEP - border avoidance"
+    when
+        $e1 : CrossingEvent(
+            $plate   : plateNumber,
+            $border1 : borderCrossingId,
+            $ts1     : timestamp
+        )
+        $e2 : CrossingEvent(
+            plateNumber != null,
+            plateNumber == $plate,
+            borderCrossingId != $border1,
+            this != $e1,
+            timestamp >= ($ts1 - 86400000),
+            timestamp <= ($ts1 + 86400000)
+        )
+        not CepAlarm(plateNumber == $plate,
+                     type == CepAlarmType.BORDER_AVOIDANCE)
+    then
+        insert(new CepAlarm(CepAlarmType.BORDER_AVOIDANCE, $plate,
+            "Vozilo " + $plate + " koristi razlicite prelaze: "
+            + $border1 + " i " + $e2.getBorderCrossingId(),
+            System.currentTimeMillis()));
+end

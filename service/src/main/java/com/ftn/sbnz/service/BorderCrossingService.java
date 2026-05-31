@@ -17,7 +17,7 @@ public class BorderCrossingService {
     private KieContainer kieContainer;
 
     public BorderCrossingResult evaluate(BorderCrossingRequest request) {
-        KieSession kieSession = kieContainer.newKieSession();
+        KieSession kieSession = kieContainer.newKieSession("forwardKSession");
 
         try {
             insertFacts(kieSession, request);
