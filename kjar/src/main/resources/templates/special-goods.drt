@@ -1,0 +1,54 @@
+template header
+GOODS_TYPE
+GOODS_KEYWORD
+REQUIRED_CERTIFICATE
+VIOLATION_TYPE
+BASE_FINE
+CAN_CONTINUE
+
+package templates;
+
+import com.ftn.sbnz.model.models.Driver;
+import com.ftn.sbnz.model.models.CMRDocument;
+import com.ftn.sbnz.model.models.TransportPermit;
+import com.ftn.sbnz.model.models.Violation;
+import com.ftn.sbnz.model.models.DriverValidity;
+import com.ftn.sbnz.model.models.VehicleValidity;
+import com.ftn.sbnz.model.enums.ViolationType;
+import com.ftn.sbnz.model.enums.GoodsCertificate;
+import com.ftn.sbnz.model.enums.ValidityStatus;
+import com.ftn.sbnz.model.enums.TransportPermitType;
+import java.time.LocalDate;
+
+template "special-goods-certificate-check"
+
+rule "Special goods certificate - @{GOODS_TYPE}"
+    salience 90
+    when
+        DriverValidity(status != ValidityStatus.ARREST)
+        VehicleValidity(status != ValidityStatus.FORBIDDEN)
+        $driver: Driver($isForeign: foreignCitizen)
+        $cmr: CMRDocument($desc: goodsDescription)
+        eval($desc != null &&
+             $desc.toLowerCase().contains("@{GOODS_KEYWORD}"))
+        not TransportPermit(
+            goodsCertificate == GoodsCertificate.@{REQUIRED_CERTIFICATE},
+            expiryDate != null,
+            expiryDate.isAfter(LocalDate.now())
+        )
+        not Violation(type == ViolationType.@{VIOLATION_TYPE})
+    then
+        double baseFine = @{BASE_FINE};
+        double fine = $isForeign ? baseFine * 2 : baseFine;
+        String note = $isForeign ? "Duplirana kazna za stranog drzavljanina" : "";
+
+        insert(new Violation(
+            ViolationType.@{VIOLATION_TYPE},
+            "Clan XXX zakona o transportu",
+            fine,
+            @{CAN_CONTINUE},
+            "Roba tipa @{GOODS_TYPE} zahteva ispravan @{REQUIRED_CERTIFICATE} sertifikat. " + note
+        ));
+end
+
+end template

@@ -2,7 +2,7 @@ package com.ftn.sbnz.service;
 
 
 import com.ftn.sbnz.model.models.*;
-import com.ftn.sbnz.model.enums.PermitType;
+import com.ftn.sbnz.model.enums.TransportPermitType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -131,7 +131,7 @@ public class ScenarioRunner implements CommandLineRunner {
         cmr.setGoodsDescription("Građevinski materijal");
 
         TransportPermit bilateral = new TransportPermit();
-        bilateral.setType(PermitType.BILATERAL);
+        bilateral.setType(TransportPermitType.BILATERAL);
         bilateral.setExpiryDate(LocalDate.of(2027, 1, 1));
         bilateral.setCoveredRoutes("RS-BA");
 
@@ -196,7 +196,7 @@ public class ScenarioRunner implements CommandLineRunner {
         cmr.setGoodsDescription("Elektronika");
 
         TransportPermit cemt = new TransportPermit();
-        cemt.setType(PermitType.CEMT);
+        cemt.setType(TransportPermitType.CEMT);
         cemt.setExpiryDate(LocalDate.now().plusYears(1));
         cemt.setCoveredRoutes("ALL");
 
@@ -260,7 +260,7 @@ public class ScenarioRunner implements CommandLineRunner {
         cmr.setGoodsDescription("Opis robe");
 
         TransportPermit cemt = new TransportPermit();
-        cemt.setType(PermitType.CEMT);
+        cemt.setType(TransportPermitType.CEMT);
         cemt.setExpiryDate(LocalDate.now().plusYears(1));
         cemt.setCoveredRoutes("ALL");
 
@@ -325,7 +325,7 @@ public class ScenarioRunner implements CommandLineRunner {
         cmr.setGoodsDescription("Prehrambeni proizvodi");
 
         TransportPermit cemt = new TransportPermit();
-        cemt.setType(PermitType.CEMT);
+        cemt.setType(TransportPermitType.CEMT);
         cemt.setExpiryDate(LocalDate.now().plusYears(1));
         cemt.setCoveredRoutes("ALL");
 
@@ -389,7 +389,7 @@ public class ScenarioRunner implements CommandLineRunner {
         cmr.setGoodsDescription("Drvna građa");
 
         TransportPermit cemt = new TransportPermit();
-        cemt.setType(PermitType.CEMT);
+        cemt.setType(TransportPermitType.CEMT);
         cemt.setExpiryDate(LocalDate.now().plusYears(1));
         cemt.setCoveredRoutes("ALL");
 
@@ -455,7 +455,7 @@ public class ScenarioRunner implements CommandLineRunner {
         cmr.setGoodsDescription("Tekstil");
 
         TransportPermit cemt = new TransportPermit();
-        cemt.setType(PermitType.CEMT);
+        cemt.setType(TransportPermitType.CEMT);
         cemt.setExpiryDate(LocalDate.now().plusYears(1));
         cemt.setCoveredRoutes("ALL");
 

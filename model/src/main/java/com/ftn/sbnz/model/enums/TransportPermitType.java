@@ -1,6 +1,6 @@
 package com.ftn.sbnz.model.enums;
 
-public enum PermitType {
+public enum TransportPermitType {
     CEMT,
     BILATERAL,
     TRANSIT,

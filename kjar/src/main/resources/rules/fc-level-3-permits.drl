@@ -8,7 +8,7 @@ import com.ftn.sbnz.model.models.VehicleValidity;
 import com.ftn.sbnz.model.models.PermitStatus;
 import com.ftn.sbnz.model.enums.ViolationType;
 import com.ftn.sbnz.model.enums.ValidityStatus;
-import com.ftn.sbnz.model.enums.PermitType;
+import com.ftn.sbnz.model.enums.TransportPermitType;
 
 import java.time.LocalDate;
 
@@ -17,7 +17,7 @@ rule "Validate CEMT Permit"
     salience 100
     when
         VehicleValidity()
-        TransportPermit(type == PermitType.CEMT,
+        TransportPermit(type == TransportPermitType.CEMT,
                         expiryDate != null,
                         expiryDate.isAfter(LocalDate.now()))
         not PermitStatus()
@@ -30,12 +30,12 @@ rule "Bilateral permit covers route"
     salience 90
     when
         VehicleValidity()
-        not TransportPermit(type == PermitType.CEMT,
+        not TransportPermit(type == TransportPermitType.CEMT,
                             expiryDate != null,
                             expiryDate.isAfter(LocalDate.now()))
         $driver: Driver($citizenship: citizenship)
         $cmr: CMRDocument($origin: originCountry, $destination: destinationCountry)
-        TransportPermit(type == PermitType.BILATERAL,
+        TransportPermit(type == TransportPermitType.BILATERAL,
                         expiryDate != null,
                         expiryDate.isAfter(LocalDate.now()),
                         coveredRoutes != null,
@@ -51,12 +51,12 @@ rule "Bilateral permit does not cover route"
     salience 89
     when
         VehicleValidity()
-        not TransportPermit(type == PermitType.CEMT,
+        not TransportPermit(type == TransportPermitType.CEMT,
                             expiryDate != null,
                             expiryDate.isAfter(LocalDate.now()))
         $driver: Driver($citizenship: citizenship)
         $cmr: CMRDocument($origin: originCountry, $destination: destinationCountry)
-        TransportPermit(type == PermitType.BILATERAL,
+        TransportPermit(type == TransportPermitType.BILATERAL,
                         expiryDate != null,
                         expiryDate.isAfter(LocalDate.now()),
                         coveredRoutes != null,
@@ -78,14 +78,14 @@ rule "Transit permit - vehicle passes through BiH"
     salience 80
     when
         VehicleValidity()
-        not TransportPermit(type == PermitType.CEMT,
+        not TransportPermit(type == TransportPermitType.CEMT,
                             expiryDate != null,
                             expiryDate.isAfter(LocalDate.now()))
-        not TransportPermit(type == PermitType.BILATERAL,
+        not TransportPermit(type == TransportPermitType.BILATERAL,
                             expiryDate != null,
                             expiryDate.isAfter(LocalDate.now()))
         $cmr: CMRDocument(destinationCountry != "BA")
-        TransportPermit(type == PermitType.TRANSIT,
+        TransportPermit(type == TransportPermitType.TRANSIT,
                         expiryDate != null,
                         expiryDate.isAfter(LocalDate.now()))
         not PermitStatus()
@@ -98,16 +98,16 @@ rule "No valid route permit"
     salience 70
     when
         VehicleValidity()
-        not TransportPermit(type == PermitType.CEMT,
+        not TransportPermit(type == TransportPermitType.CEMT,
                                     expiryDate != null,
                                     expiryDate.isAfter(LocalDate.now()))
-        not TransportPermit(type == PermitType.BILATERAL,
+        not TransportPermit(type == TransportPermitType.BILATERAL,
                             expiryDate != null,
                             expiryDate.isAfter(LocalDate.now()))
-        not TransportPermit(type == PermitType.TRANSIT,
+        not TransportPermit(type == TransportPermitType.TRANSIT,
                             expiryDate != null,
                             expiryDate.isAfter(LocalDate.now()))
-        not TransportPermit(type == PermitType.THIRD_COUNTRY,
+        not TransportPermit(type == TransportPermitType.THIRD_COUNTRY,
                             expiryDate != null,
                             expiryDate.isAfter(LocalDate.now()))
         not PermitStatus()

@@ -1,7 +1,6 @@
 package com.ftn.sbnz.model.models;
 
 import com.ftn.sbnz.model.enums.GoodsCertificate;
-import com.ftn.sbnz.model.enums.TransportPermitType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,10 +12,8 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class TransportPermit {
-    private TransportPermitType type;
+public class DriverCertificate {
     private GoodsCertificate goodsCertificate;
+    private int yearsExperience;
     private LocalDate expiryDate;
-    private String coveredRoutes;
 }
-
