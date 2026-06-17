@@ -22,19 +22,18 @@ import java.time.LocalDate;
 
 template "driver-qualification-check"
 
-rule "Driver qualification - @{GOODS_KEYWORD} to @{DEST_COUNTRY}"
-
-rule "Driver qualification - @{GOODS_KEYWORD} to @{DEST_COUNTRY}"
+rule "Driver qualification - @{GOODS_KEYWORD} to @{DEST_COUNTRY} - domestic"
     salience 88
     when
         DriverValidity(status != ValidityStatus.ARREST)
         VehicleValidity(status != ValidityStatus.FORBIDDEN)
-        $driver: Driver($isForeign: foreignCitizen)
+        Driver(foreignCitizen == false)
         $cmr: CMRDocument(
             destinationCountry == "@{DEST_COUNTRY}",
-            $desc: goodsDescription
+            $desc: goodsDescription,
+            goodsDescription != null,
+            goodsDescription.toLowerCase().contains("@{GOODS_KEYWORD}")
         )
-        eval($desc != null && $desc.toLowerCase().contains("@{GOODS_KEYWORD}"))
         not DriverCertificate(
             type == GoodsCertificate.@{REQUIRED_CERTIFICATE},
             yearsExperience >= @{MIN_EXPERIENCE_YEARS},
@@ -43,20 +42,41 @@ rule "Driver qualification - @{GOODS_KEYWORD} to @{DEST_COUNTRY}"
         )
         not Violation(type == ViolationType.@{VIOLATION_TYPE})
     then
-        double baseFine = @{BASE_FINE};
-        double fine = $isForeign ? baseFine * 2 : baseFine;
-        String explanation = @{MIN_EXPERIENCE_YEARS} > 0
-            ? "Zahtevano najmanje @{MIN_EXPERIENCE_YEARS} godina iskustva."
-            : "";
-        String note = $isForeign ? "Duplirana kazna za stranog drzavljanina" : "";
-
         insert(new Violation(
             ViolationType.@{VIOLATION_TYPE},
             "Clan XXX zakona o transportu",
-            fine,
+            @{BASE_FINE},
             @{CAN_CONTINUE},
-            "Prevoz '@{GOODS_KEYWORD}' robe zahteva ispravan "
-            + "@{REQUIRED_CERT} sertifikat." + explanation + note
+            "Prevoz '@{GOODS_KEYWORD}' robe zahteva ispravan @{REQUIRED_CERTIFICATE} sertifikat. Zahtevano najmanje @{MIN_EXPERIENCE_YEARS} godina iskustva."
+        ));
+end
+
+rule "Driver qualification - @{GOODS_KEYWORD} to @{DEST_COUNTRY} - foreign"
+    salience 88
+    when
+        DriverValidity(status != ValidityStatus.ARREST)
+        VehicleValidity(status != ValidityStatus.FORBIDDEN)
+        Driver(foreignCitizen == true)
+        $cmr: CMRDocument(
+            destinationCountry == "@{DEST_COUNTRY}",
+            $desc: goodsDescription,
+            goodsDescription != null,
+            goodsDescription.toLowerCase().contains("@{GOODS_KEYWORD}")
+        )
+        not DriverCertificate(
+            type == GoodsCertificate.@{REQUIRED_CERTIFICATE},
+            yearsExperience >= @{MIN_EXPERIENCE_YEARS},
+            expiryDate != null,
+            expiryDate.isAfter(LocalDate.now())
+        )
+        not Violation(type == ViolationType.@{VIOLATION_TYPE})
+    then
+        insert(new Violation(
+            ViolationType.@{VIOLATION_TYPE},
+            "Clan XXX zakona o transportu",
+            @{BASE_FINE} * 2,
+            @{CAN_CONTINUE},
+            "Prevoz '@{GOODS_KEYWORD}' robe zahteva ispravan @{REQUIRED_CERTIFICATE} sertifikat. Zahtevano najmanje @{MIN_EXPERIENCE_YEARS} godina iskustva. Duplirana kazna za stranog drzavljanina."
         ));
 end
 
