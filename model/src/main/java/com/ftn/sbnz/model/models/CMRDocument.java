@@ -1,14 +1,12 @@
 package com.ftn.sbnz.model.models;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 public class CMRDocument {
     private String originCountry;
     private String destinationCountry;

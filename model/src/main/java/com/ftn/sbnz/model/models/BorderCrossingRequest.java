@@ -21,4 +21,5 @@ public class BorderCrossingRequest {
     private LiveWeightMeasurement liveWeightMeasurement;
     private CMRDocument cmrDocument;
     private List<TransportPermit> transportPermits;
+    private List<DriverCertificate> driverCertificates;
 }

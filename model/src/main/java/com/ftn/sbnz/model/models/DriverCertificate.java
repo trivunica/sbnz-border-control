@@ -1,10 +1,7 @@
 package com.ftn.sbnz.model.models;
 
 import com.ftn.sbnz.model.enums.GoodsCertificate;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
 
@@ -12,6 +9,7 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString
 public class DriverCertificate {
     private GoodsCertificate goodsCertificate;
     private int yearsExperience;

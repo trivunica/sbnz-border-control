@@ -18,6 +18,14 @@ public class Violation {
     private String explanation;
 
 
+    public Violation(ViolationType type, String legalBasis, double fineAmount, boolean canContinue, String explanation) {
+        this.type = type;
+        this.legalBasis = legalBasis;
+        this.fineAmount = fineAmount;
+        this.canContinue = canContinue;
+        this.explanation = explanation;
+    }
+
     public boolean isArrestType() {
         return type == ViolationType.INTERPOL_WARRANT || type == ViolationType.DOMESTIC_WARRANT;
     }
