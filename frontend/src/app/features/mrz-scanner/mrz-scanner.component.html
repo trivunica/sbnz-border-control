@@ -1,0 +1,121 @@
+<div class="scanner-wrap">
+    <div class="mode-tabs">
+        <button class="mode-tab" [class.active]="mode() === 'upload'"
+                (click)="selectMode('upload')" type="button">
+            <i class="ti ti-upload" aria-hidden="true"></i> Upload slike
+        </button>
+        <button class="mode-tab" [class.active]="mode() === 'camera'"
+                (click)="selectMode('camera')" type="button">
+            <i class="ti ti-camera" aria-hidden="true"></i> Kamera
+        </button>
+    </div>
+
+    <input type="file" accept="image/*" #fileInput hidden (change)="onFileSelected($event)" />
+
+    <ng-container *ngIf="mode() === 'upload' && !result()">
+        <div class="drop-zone"
+             (click)="triggerFileInput()"
+             (dragover)="onDragOver($event)"
+             (drop)="onDrop($event)"
+             [class.scanning]="scanning()">
+            <ng-container *ngIf="!scanning()">
+                <i class="ti ti-id drop-icon" aria-hidden="true"></i>
+                <p class="drop-label">Prevuci sliku dokumenta ili klikni za upload</p>
+                <p class="drop-sub">Pasoš (TD3) ili lična karta (TD1) - MRZ zona mora biti vidljiva i neoštećena</p>
+            </ng-container>
+            <ng-container *ngIf="scanning()">
+                <div class="ocr-progress">
+                    <div class="ocr-bar-track">
+                        <div class="ocr-bar-fill" [style.width.%]="progress()"></div>
+                    </div>
+                    <span class="ocr-label">OCR u toku... {{ progress() }}%</span>
+                </div>
+            </ng-container>
+        </div>
+    </ng-container>
+
+    <ng-container *ngIf="mode() === 'camera'">
+        <div class="camera-box">
+            <video #videoEl autoplay playsinline muted class="camera-video"></video>
+            <div class="mrz-overlay">
+                <div class="mrz-guide-box">
+                    <span class="mrz-guide-label">MRZ zona</span>
+                </div>
+            </div>
+        </div>
+        <button class="btn-capture" (click)="captureFromCamera()" type="button"
+                [disabled]="scanning()">
+            <i class="ti ti-focus-2" aria-hidden="true"></i>
+            {{ scanning() ? 'Skeniranje...' : 'Skeniraj dokument' }}
+        </button>
+    </ng-container>
+
+    <div *ngIf="error()" class="scan-error">
+        <i class="ti ti-alert-circle" aria-hidden="true"></i>
+        {{ error() }}
+    </div>
+
+    <div *ngIf="result() && !scanning()" class="scan-result">
+        <div class="result-header">
+            <div class="result-status" [class.valid]="result()!.checkDigitsValid"
+                 [class.warn]="!result()!.checkDigitsValid">
+                <i class="ti" aria-hidden="true"
+                   [class.ti-circle-check]="result()!.checkDigitsValid"
+                   [class.ti-alert-triangle]="!result()!.checkDigitsValid"></i>
+                {{ result()!.checkDigitsValid ? 'MRZ uspešno pročitan' : 'Greška u kontrolnim ciframa, proveri ručno' }}
+            </div>
+        </div>
+
+        <div class="result-grid">
+            <div class="result-row">
+                <span class="result-label">Tip dokumenta</span>
+                <span class="result-val">{{ result()!.docType === 'PASSPORT' ? 'Pasoš' : 'Lična karta' }}</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Prezime</span>
+                <span class="result-val">{{ result()!.surname }}</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Ime</span>
+                <span class="result-val">{{ result()!.givenNames }}</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Broj dokumenta</span>
+                <span class="result-val mono">{{ result()!.documentNumber }}</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Državljanstvo</span>
+                <span class="result-val">{{ result()!.nationality }}</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Zemlja izdavanja</span>
+                <span class="result-val">{{ result()!.issuingCountry }}</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Datum rođenja</span>
+                <span class="result-val">{{ result()!.dateOfBirth }}</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Datum isteka</span>
+                <span class="result-val" [class.expired]="isExpired()">
+          {{ result()!.expiryDate }}
+                    <span *ngIf="isExpired()" class="expired-tag">ISTEKAO</span>
+        </span>
+            </div>
+        </div>
+
+        <div class="mrz-raw">
+            <span class="mrz-raw-label">MRZ</span>
+            <code *ngFor="let line of result()!.rawLines">{{ line }}</code>
+        </div>
+
+        <div class="result-actions">
+            <button class="btn-reset" (click)="reset()" type="button">
+                <i class="ti ti-refresh" aria-hidden="true"></i> Skeniraj ponovo
+            </button>
+            <button class="btn-apply" (click)="applyToForm()" type="button">
+                <i class="ti ti-form-filled" aria-hidden="true"></i> Popuni formu
+            </button>
+        </div>
+    </div>
+</div>
