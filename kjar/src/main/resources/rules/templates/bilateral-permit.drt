@@ -7,7 +7,7 @@ VIOLATION_TYPE
 BASE_FINE
 CAN_CONTINUE
 
-package templates
+package rules
 
 import com.ftn.sbnz.model.models.Driver;
 import com.ftn.sbnz.model.models.CMRDocument;
@@ -22,11 +22,11 @@ import java.time.LocalDate;
 
 template "bilateral-permit-check"
 
-rule "Bilateral permit check - @{COUNTRY_A} to @{COUNTRY_B} - third country - domestic"
-    salience 85
+rule "Bilateral permit check - @{COUNTRY_A} to @{COUNTRY_B} - third country - domestic - @{row.rowNumber}"
+    salience 90
     when
-        DriverValidity(status != ValidityStatus.ARREST)
-        VehicleValidity(status != ValidityStatus.FORBIDDEN)
+        not Violation(isArrestType())
+        not Violation(isVehicleForbiddenType())
         Driver(citizenship == "@{COUNTRY_A}", foreignCitizen == false)
         $cmr: CMRDocument(
             destinationCountry == "@{COUNTRY_B}",
@@ -54,8 +54,8 @@ rule "Bilateral permit check - @{COUNTRY_A} to @{COUNTRY_B} - third country - do
         ));
 end
 
-rule "Bilateral permit check - @{COUNTRY_A} to @{COUNTRY_B} - third country - foreign"
-    salience 85
+rule "Bilateral permit check - @{COUNTRY_A} to @{COUNTRY_B} - third country - foreign - @{row.rowNumber}"
+    salience 90
     when
         DriverValidity(status != ValidityStatus.ARREST)
         VehicleValidity(status != ValidityStatus.FORBIDDEN)
@@ -86,8 +86,8 @@ rule "Bilateral permit check - @{COUNTRY_A} to @{COUNTRY_B} - third country - fo
         ));
 end
 
-rule "Bilateral permit check - @{COUNTRY_A} to @{COUNTRY_B} - weight - domestic"
-    salience 85
+rule "Bilateral permit check - @{COUNTRY_A} to @{COUNTRY_B} - weight - domestic - @{row.rowNumber}"
+    salience 90
     when
         DriverValidity(status != ValidityStatus.ARREST)
         VehicleValidity(status != ValidityStatus.FORBIDDEN)
@@ -116,8 +116,8 @@ rule "Bilateral permit check - @{COUNTRY_A} to @{COUNTRY_B} - weight - domestic"
         ));
 end
 
-rule "Bilateral permit check - @{COUNTRY_A} to @{COUNTRY_B} - weight - foreign"
-    salience 85
+rule "Bilateral permit check - @{COUNTRY_A} to @{COUNTRY_B} - weight - foreign - @{row.rowNumber}"
+    salience 90
     when
         DriverValidity(status != ValidityStatus.ARREST)
         VehicleValidity(status != ValidityStatus.FORBIDDEN)

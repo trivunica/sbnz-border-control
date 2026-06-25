@@ -35,12 +35,17 @@ rule "Bilateral permit covers route"
                             expiryDate.isAfter(LocalDate.now()))
         $driver: Driver($citizenship: citizenship)
         $cmr: CMRDocument($origin: originCountry, $destination: destinationCountry)
-        TransportPermit(type == TransportPermitType.BILATERAL,
-                        expiryDate != null,
-                        expiryDate.isAfter(LocalDate.now()),
-                        coveredRoutes != null,
-                        coveredRoutes.contains($citizenship))
-        eval($origin.equals($citizenship) || $origin.equals($destination))
+        TransportPermit(
+            type == TransportPermitType.BILATERAL,
+            expiryDate != null,
+            expiryDate.isAfter(LocalDate.now()),
+            coveredRoutes != null,
+            $routes: coveredRoutes
+        )
+        eval(
+            $routes.contains($citizenship) && $routes.contains($destination)
+            && ($origin.equals($citizenship) || $origin.equals($destination))
+        )
         not PermitStatus()
     then
         insert(new PermitStatus(ValidityStatus.VALID));
@@ -56,12 +61,17 @@ rule "Bilateral permit does not cover route"
                             expiryDate.isAfter(LocalDate.now()))
         $driver: Driver($citizenship: citizenship)
         $cmr: CMRDocument($origin: originCountry, $destination: destinationCountry)
-        TransportPermit(type == TransportPermitType.BILATERAL,
-                        expiryDate != null,
-                        expiryDate.isAfter(LocalDate.now()),
-                        coveredRoutes != null,
-                        coveredRoutes.contains($citizenship))
-        eval(!$origin.equals($citizenship) && !$origin.equals($destination))
+        TransportPermit(
+            type == TransportPermitType.BILATERAL,
+            expiryDate != null,
+            expiryDate.isAfter(LocalDate.now()),
+            coveredRoutes != null,
+            $routes: coveredRoutes
+        )
+        eval(
+            !($routes.contains($citizenship) && $routes.contains($destination)
+              && ($origin.equals($citizenship) || $origin.equals($destination)))
+        )
         not PermitStatus()
         not Violation(type == ViolationType.MISSING_THIRD_COUNTRY_PERMIT)
     then
@@ -69,7 +79,7 @@ rule "Bilateral permit does not cover route"
                              "Bilateralna dozvola ne pokriva robu iz treće zemlje. "
                              + "Zemlja porekla robe: " + $origin
                              + ", zemlja vozača: " + $citizenship
-                             + ". Potrebna CEMT dozvola ili dozvola za trece zemlje."));
+                             + ". Potrebna CEMT dozvola ili dozvola za treće zemlje."));
         insert(new PermitStatus(ValidityStatus.FORBIDDEN));
 end
 

@@ -1,0 +1,203 @@
+package rules;
+
+import com.ftn.sbnz.model.models.Driver;
+import com.ftn.sbnz.model.models.Violation;
+import com.ftn.sbnz.model.models.FinalDecision;
+import com.ftn.sbnz.model.models.DriverValidity;
+import com.ftn.sbnz.model.models.PermitStatus;
+import com.ftn.sbnz.model.enums.ViolationType;
+import com.ftn.sbnz.model.enums.ActionRecommendation;
+import com.ftn.sbnz.model.enums.ValidityStatus;
+
+
+rule "Final decision ARREST"
+    salience 2
+    when
+        DriverValidity(status == ValidityStatus.ARREST)
+        not FinalDecision()
+    then
+        FinalDecision decision = new FinalDecision();
+        decision.setRecommendation(ActionRecommendation.ARREST);
+        decision.setTotalFine(0.0);
+        decision.setRequiresDriverReplacement(false);
+        decision.setRequiresCargoOffLoad(false);
+        decision.setEntryRefusalCertificate(
+            "POTVRDA O LISAVANJU SLOBODE: Vozac je evidentiran u bazi potrage. " +
+            "Pokrece se zakonska procedura. Potvrda se izdaje u 3 primerka."
+        );
+        insert(decision);
+end
+
+
+rule "Final decision FORBID ENTRY - driver replacement and cargo offload"
+    salience 1
+    when
+        PermitStatus()
+        Violation(canContinue == false)
+        exists Violation(type == ViolationType.EXPIRED_DRIVING_LICENCE)
+        exists Violation(type == ViolationType.TRAILER_OVERLOAD
+                      || type == ViolationType.TOTAL_WEIGHT_OVERLOAD)
+        $totalFine: Double() from accumulate(
+            Violation($fine: fineAmount),
+            sum($fine)
+        )
+        not FinalDecision()
+    then
+        FinalDecision decision = new FinalDecision();
+        decision.setRecommendation(ActionRecommendation.FORBID_ENTRY);
+        decision.setTotalFine($totalFine);
+        decision.setRequiresDriverReplacement(true);
+        decision.setRequiresCargoOffLoad(true);
+        decision.setEntryRefusalCertificate(
+            "POTVRDA O ODBIJANJU ULASKA: Utvrdjena krsenja sprecavaju prelazak granice. " +
+            "Detalji svakog krsenja i zakonski osnov navedeni su u prilogu. " +
+            "Vozac ima pravo zalbe u skladu sa zakonom."
+        );
+        insert(decision);
+end
+
+
+rule "Final decision FORBID ENTRY - driver replacement only"
+    salience 1
+    when
+        PermitStatus()
+        Violation(canContinue == false)
+        exists Violation(type == ViolationType.EXPIRED_DRIVING_LICENCE)
+        not Violation(type == ViolationType.TRAILER_OVERLOAD
+                   || type == ViolationType.TOTAL_WEIGHT_OVERLOAD)
+        $totalFine: Double() from accumulate(
+            Violation($fine: fineAmount),
+            sum($fine)
+        )
+        not FinalDecision()
+    then
+        FinalDecision decision = new FinalDecision();
+        decision.setRecommendation(ActionRecommendation.FORBID_ENTRY);
+        decision.setTotalFine($totalFine);
+        decision.setRequiresDriverReplacement(true);
+        decision.setRequiresCargoOffLoad(false);
+        decision.setEntryRefusalCertificate(
+            "POTVRDA O ODBIJANJU ULASKA: Utvrdjena krsenja sprecavaju prelazak granice. " +
+            "Detalji svakog krsenja i zakonski osnov navedeni su u prilogu. " +
+            "Vozac ima pravo zalbe u skladu sa zakonom."
+        );
+        insert(decision);
+end
+
+
+rule "Final decision FORBID ENTRY - cargo offload only"
+    salience 1
+    when
+        PermitStatus()
+        Violation(canContinue == false)
+        not Violation(type == ViolationType.EXPIRED_DRIVING_LICENCE)
+        exists Violation(type == ViolationType.TRAILER_OVERLOAD
+                      || type == ViolationType.TOTAL_WEIGHT_OVERLOAD)
+        $totalFine: Double() from accumulate(
+            Violation($fine: fineAmount),
+            sum($fine)
+        )
+        not FinalDecision()
+    then
+        FinalDecision decision = new FinalDecision();
+        decision.setRecommendation(ActionRecommendation.FORBID_ENTRY);
+        decision.setTotalFine($totalFine);
+        decision.setRequiresDriverReplacement(false);
+        decision.setRequiresCargoOffLoad(true);
+        decision.setEntryRefusalCertificate(
+            "POTVRDA O ODBIJANJU ULASKA: Utvrdjena krsenja sprecavaju prelazak granice. " +
+            "Detalji svakog krsenja i zakonski osnov navedeni su u prilogu. " +
+            "Vozac ima pravo zalbe u skladu sa zakonom."
+        );
+        insert(decision);
+end
+
+
+rule "Final decision FORBID ENTRY - no replacement no offload"
+    salience 1
+    when
+        PermitStatus()
+        Violation(canContinue == false)
+        not Violation(type == ViolationType.EXPIRED_DRIVING_LICENCE)
+        not Violation(type == ViolationType.TRAILER_OVERLOAD
+                   || type == ViolationType.TOTAL_WEIGHT_OVERLOAD)
+        $totalFine: Double() from accumulate(
+            Violation($fine: fineAmount),
+            sum($fine)
+        )
+        not FinalDecision()
+    then
+        FinalDecision decision = new FinalDecision();
+        decision.setRecommendation(ActionRecommendation.FORBID_ENTRY);
+        decision.setTotalFine($totalFine);
+        decision.setRequiresDriverReplacement(false);
+        decision.setRequiresCargoOffLoad(false);
+        decision.setEntryRefusalCertificate(
+            "POTVRDA O ODBIJANJU ULASKA: Utvrdjena krsenja sprecavaju prelazak granice. " +
+            "Detalji svakog krsenja i zakonski osnov navedeni su u prilogu. " +
+            "Vozac ima pravo zalbe u skladu sa zakonom."
+        );
+        insert(decision);
+end
+
+
+rule "Final decision HOLD FINE - cargo offload"
+    salience 1
+    when
+        PermitStatus()
+        not Violation(canContinue == false)
+        exists Violation()
+        exists Violation(type == ViolationType.TRAILER_OVERLOAD
+                      || type == ViolationType.TOTAL_WEIGHT_OVERLOAD)
+        $totalFine: Double() from accumulate(
+            Violation($fine: fineAmount),
+            sum($fine)
+        )
+        not FinalDecision()
+    then
+        FinalDecision decision = new FinalDecision();
+        decision.setRecommendation(ActionRecommendation.HOLD_FINE);
+        decision.setTotalFine($totalFine);
+        decision.setRequiresDriverReplacement(false);
+        decision.setRequiresCargoOffLoad(true);
+        insert(decision);
+end
+
+
+rule "Final decision HOLD FINE - no offload"
+    salience 1
+    when
+        PermitStatus()
+        not Violation(canContinue == false)
+        exists Violation()
+        not Violation(type == ViolationType.TRAILER_OVERLOAD
+                   || type == ViolationType.TOTAL_WEIGHT_OVERLOAD)
+        $totalFine: Double() from accumulate(
+            Violation($fine: fineAmount),
+            sum($fine)
+        )
+        not FinalDecision()
+    then
+        FinalDecision decision = new FinalDecision();
+        decision.setRecommendation(ActionRecommendation.HOLD_FINE);
+        decision.setTotalFine($totalFine);
+        decision.setRequiresDriverReplacement(false);
+        decision.setRequiresCargoOffLoad(false);
+        insert(decision);
+end
+
+
+rule "Final decision ALLOW"
+    salience 1
+    when
+        PermitStatus()
+        not Violation()
+        not FinalDecision()
+    then
+        FinalDecision decision = new FinalDecision();
+        decision.setRecommendation(ActionRecommendation.ALLOW);
+        decision.setTotalFine(0.0);
+        decision.setRequiresDriverReplacement(false);
+        decision.setRequiresCargoOffLoad(false);
+        insert(decision);
+end
