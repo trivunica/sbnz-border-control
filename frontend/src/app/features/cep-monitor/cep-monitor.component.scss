@@ -58,7 +58,7 @@
   border-top: 3px solid var(--color-text-danger);
   &.stat-neutral { border-top-color: var(--color-border-secondary); }
   &.stat-freq    { border-top-color: #e8a020; }
-  &.stat-coord   { border-top-color: #533ab7; }
+  &.stat-coord   { border-top-color: var(--color-text-coord); }
   &.stat-avoid   { border-top-color: var(--color-text-danger); }
 }
 .stat-value { font-size: 26px; font-weight: 600; color: var(--color-text-primary); }
@@ -171,9 +171,9 @@
     border-bottom-color: #e8a020;
   }
   &--coord {
-    background: #eeedfe;
-    color: #533ab7;
-    border-bottom-color: #c5bef7;
+    background:         var(--color-background-coord);
+    color:              var(--color-text-coord);
+    border-bottom-color: var(--color-border-coord);
   }
   &--avoid {
     background: var(--color-background-danger);
@@ -213,7 +213,7 @@
   &:last-child { border-bottom: none; }
 
   &.alarm-freq  { background: var(--color-background-warning); }
-  &.alarm-coord { background: #f5f4ff; }
+  &.alarm-coord { background: var(--color-background-coord); }
   &.alarm-avoid { background: var(--color-background-danger); }
 }
 

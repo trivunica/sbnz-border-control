@@ -3,6 +3,9 @@ package com.ftn.sbnz.service;
 import com.ftn.sbnz.model.models.*;
 import org.kie.api.runtime.KieContainer;
 import org.kie.api.runtime.KieSession;
+import org.kie.api.event.rule.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,19 +19,24 @@ public class BorderCrossingService {
     @Autowired
     private KieContainer kieContainer;
 
+
     public BorderCrossingResult evaluate(BorderCrossingRequest request) {
         KieSession kieSession = kieContainer.newKieSession("forwardKSession");
 
         try {
             insertFacts(kieSession, request);
+
             kieSession.setGlobal("today", LocalDate.now());
             kieSession.setGlobal("ninetyDaysFromNow", LocalDate.now().plusDays(90));
+
             kieSession.fireAllRules();
+
             return extractResult(kieSession);
         } finally {
             kieSession.dispose();
         }
     }
+
 
     private void insertFacts(KieSession session, BorderCrossingRequest request) {
         if (request.getDriver() != null)
@@ -45,7 +53,10 @@ public class BorderCrossingService {
             session.insert(request.getLiveWeightMeasurement());
         if (request.getTransportPermits() != null)
             request.getTransportPermits().forEach(session::insert);
+        if (request.getDriverCertificates() != null)
+            request.getDriverCertificates().forEach(session::insert);
     }
+
 
     private BorderCrossingResult extractResult(KieSession session) {
         BorderCrossingResult result = new BorderCrossingResult();

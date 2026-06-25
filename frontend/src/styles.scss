@@ -25,6 +25,10 @@
   --color-border-primary:   #dadce0;
   --color-border-secondary: #e8eaed;
   --color-border-tertiary:  #f1f3f4;
+
+  --color-background-coord:  #eeecfd;
+  --color-text-coord:        #533ab7;
+  --color-border-coord:      #c5bef7;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -46,6 +50,10 @@
     --color-border-primary:   #313244;
     --color-border-secondary: #45475a;
     --color-border-tertiary:  #313244;
+
+    --color-background-coord:  #32044a;
+    --color-text-coord:        #a99ef5;
+    --color-border-coord:      #533ab7;
   }
 }
 

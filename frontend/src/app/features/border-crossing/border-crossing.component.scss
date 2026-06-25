@@ -414,7 +414,7 @@
   margin-bottom: 5px;
   line-height: 1.5;
   &.alarm-freq { background: var(--color-background-warning); color: var(--color-text-warning); }
-  &.alarm-coord { background: #eeedfe; color: #533ab7; }
+  &.alarm-coord { background: var(--color-background-coord); color: var(--color-text-coord); }
   &.alarm-avoid { background: var(--color-background-danger); color: var(--color-text-danger); }
 }
 
