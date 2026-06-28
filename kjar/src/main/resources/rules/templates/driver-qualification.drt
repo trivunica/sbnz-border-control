@@ -20,7 +20,7 @@ import java.time.LocalDate;
 template "driver-qualification-check"
 
 rule "Driver qualification - Missing cert - @{GOODS_KEYWORD} - domestic - @{row.rowNumber}"
-    salience 95
+    salience 100
     when
         not Violation(isArrestType())
         not Violation(isVehicleForbiddenType())
@@ -47,7 +47,7 @@ end
 
 
 rule "Driver qualification - Missing cert - @{GOODS_KEYWORD} - foreign - @{row.rowNumber}"
-    salience 95
+    salience 100
     when
         not Violation(isArrestType())
         not Violation(isVehicleForbiddenType())
@@ -74,7 +74,7 @@ end
 
 
 rule "Driver qualification - Insufficient experience - @{GOODS_KEYWORD} - domestic - @{row.rowNumber}"
-    salience 90
+    salience 95
     when
         not Violation(isArrestType())
         not Violation(isVehicleForbiddenType())
@@ -101,7 +101,7 @@ rule "Driver qualification - Insufficient experience - @{GOODS_KEYWORD} - domest
 end
 
 rule "Driver qualification - Insufficient experience - @{GOODS_KEYWORD} - foreign - @{row.rowNumber}"
-    salience 90
+    salience 95
     when
         not Violation(isArrestType())
         not Violation(isVehicleForbiddenType())

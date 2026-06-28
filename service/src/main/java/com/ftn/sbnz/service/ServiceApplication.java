@@ -48,7 +48,6 @@ public class ServiceApplication {
 			}
 		}
 
-		compileTemplate(kfs, converter, originalContainer, "rules/templates/bilateral-permit.drt", "rules/templates/bilateral-permit-data.xls", "src/main/resources/rules/templates/bilateral.drl");
 		compileTemplate(kfs, converter, originalContainer, "rules/templates/driver-qualification.drt", "rules/templates/driver-qualification-data.xls", "src/main/resources/rules/templates/driver.drl");
 
 		kfs.writeKModuleXML(
