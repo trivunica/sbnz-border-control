@@ -1,0 +1,130 @@
+template header
+GOODS_KEYWORD
+REQUIRED_CERTIFICATE
+MIN_EXPERIENCE_YEARS
+VIOLATION_TYPE
+EXPERIENCE_VIOLATION_TYPE
+BASE_FINE
+CAN_CONTINUE
+
+package rules.templates
+
+import com.ftn.sbnz.model.models.Driver;
+import com.ftn.sbnz.model.models.CMRDocument;
+import com.ftn.sbnz.model.models.DriverCertificate;
+import com.ftn.sbnz.model.models.Violation;
+import com.ftn.sbnz.model.enums.ViolationType;
+import com.ftn.sbnz.model.enums.GoodsCertificate;
+import java.time.LocalDate;
+
+template "driver-qualification-check"
+
+rule "Driver qualification - Missing cert - @{GOODS_KEYWORD} - domestic - @{row.rowNumber}"
+    salience 100
+    when
+        not Violation(isArrestType())
+        not Violation(isVehicleForbiddenType())
+        Driver(foreignCitizen == false)
+        CMRDocument(
+            goodsDescription != null,
+            goodsDescription.toLowerCase().contains("@{GOODS_KEYWORD}")
+        )
+        not DriverCertificate(
+            goodsCertificate == GoodsCertificate.@{REQUIRED_CERTIFICATE},
+            expiryDate != null,
+            expiryDate.isAfter(LocalDate.now())
+        )
+        not Violation(type == ViolationType.@{VIOLATION_TYPE})
+    then
+        insert(new Violation(
+            ViolationType.@{VIOLATION_TYPE},
+            "Clan XXX zakona o transportu",
+            @{BASE_FINE},
+            @{CAN_CONTINUE},
+            "Prevoz '@{GOODS_KEYWORD}' robe zahteva ispravan @{REQUIRED_CERTIFICATE} sertifikat koji domaci vozac ne poseduje."
+        ));
+end
+
+
+rule "Driver qualification - Missing cert - @{GOODS_KEYWORD} - foreign - @{row.rowNumber}"
+    salience 100
+    when
+        not Violation(isArrestType())
+        not Violation(isVehicleForbiddenType())
+        Driver(foreignCitizen == true)
+        CMRDocument(
+            goodsDescription != null,
+            goodsDescription.toLowerCase().contains("@{GOODS_KEYWORD}")
+        )
+        not DriverCertificate(
+            goodsCertificate == GoodsCertificate.@{REQUIRED_CERTIFICATE},
+            expiryDate != null,
+            expiryDate.isAfter(LocalDate.now())
+        )
+        not Violation(type == ViolationType.@{VIOLATION_TYPE})
+    then
+        insert(new Violation(
+            ViolationType.@{VIOLATION_TYPE},
+            "Clan XXX zakona o transportu",
+            @{BASE_FINE} * 2,
+            @{CAN_CONTINUE},
+            "Prevoz '@{GOODS_KEYWORD}' robe zahteva ispravan @{REQUIRED_CERTIFICATE} sertifikat koji strani vozac ne poseduje. Duplirana kazna."
+        ));
+end
+
+
+rule "Driver qualification - Insufficient experience - @{GOODS_KEYWORD} - domestic - @{row.rowNumber}"
+    salience 95
+    when
+        not Violation(isArrestType())
+        not Violation(isVehicleForbiddenType())
+        Driver(foreignCitizen == false)
+        CMRDocument(
+            goodsDescription != null,
+            goodsDescription.toLowerCase().contains("@{GOODS_KEYWORD}")
+        )
+        DriverCertificate(
+            goodsCertificate == GoodsCertificate.@{REQUIRED_CERTIFICATE},
+            expiryDate != null,
+            expiryDate.isAfter(LocalDate.now()),
+            yearsExperience < @{MIN_EXPERIENCE_YEARS}
+        )
+        not Violation(type == ViolationType.@{EXPERIENCE_VIOLATION_TYPE})
+    then
+        insert(new Violation(
+            ViolationType.@{EXPERIENCE_VIOLATION_TYPE},
+            "Clan XXX zakona o transportu",
+            @{BASE_FINE},
+            @{CAN_CONTINUE},
+            "Domaci vozac poseduje @{REQUIRED_CERTIFICATE} sertifikat, ali nema dovoljno godina iskustva. Zahtevano najmanje @{MIN_EXPERIENCE_YEARS} godina."
+        ));
+end
+
+rule "Driver qualification - Insufficient experience - @{GOODS_KEYWORD} - foreign - @{row.rowNumber}"
+    salience 95
+    when
+        not Violation(isArrestType())
+        not Violation(isVehicleForbiddenType())
+        Driver(foreignCitizen == true)
+        CMRDocument(
+            goodsDescription != null,
+            goodsDescription.toLowerCase().contains("@{GOODS_KEYWORD}")
+        )
+        DriverCertificate(
+            goodsCertificate == GoodsCertificate.@{REQUIRED_CERTIFICATE},
+            expiryDate != null,
+            expiryDate.isAfter(LocalDate.now()),
+            yearsExperience < @{MIN_EXPERIENCE_YEARS}
+        )
+        not Violation(type == ViolationType.@{EXPERIENCE_VIOLATION_TYPE})
+    then
+        insert(new Violation(
+            ViolationType.@{EXPERIENCE_VIOLATION_TYPE},
+            "Clan XXX zakona o transportu",
+            @{BASE_FINE} * 2,
+            @{CAN_CONTINUE},
+            "Strani vozac poseduje @{REQUIRED_CERTIFICATE} sertifikat, ali nema dovoljno godina iskustva. Zahtevano najmanje @{MIN_EXPERIENCE_YEARS} godina. Duplirana kazna."
+        ));
+end
+
+end template

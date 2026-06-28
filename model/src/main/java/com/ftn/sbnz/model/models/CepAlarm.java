@@ -15,4 +15,13 @@ public class CepAlarm {
     private String plateNumber;
     private String message;
     private long timestamp;
+    private String crossedAt;
+
+    public CepAlarm(CepAlarmType type, String plateNumber, String message, long timestamp) {
+        this.type = type;
+        this.plateNumber = plateNumber;
+        this.message = message;
+        this.timestamp = timestamp;
+        this.crossedAt = null;
+    }
 }

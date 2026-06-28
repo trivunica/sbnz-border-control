@@ -1,4 +1,4 @@
-package cep
+package rules.cep
 
 import com.ftn.sbnz.model.models.CrossingEvent;
 import com.ftn.sbnz.model.models.CepAlarm;
@@ -22,35 +22,37 @@ rule "CEP - frequent crossings"
     then
         insert(new CepAlarm(CepAlarmType.FREQUENT_CROSSINGS, $plate,
             "Vozilo " + $plate + " je preslo granicu vise od 3 puta u poslednjih 6 sati.",
-            System.currentTimeMillis()));
+            $ts));
 end
 
 
 rule "CEP - coordinated group"
     when
         $e : CrossingEvent(
-            $company : companyName,
-            $border  : borderCrossingId,
-            $dest    : destinationCountry,
-            $ts      : timestamp
+            $company: companyName,
+            $border: borderCrossingId,
+            $dest: destinationCountry,
+            $ts: timestamp,
+            $plate: plateNumber
         )
-        Number(intValue >= 3) from accumulate(
-            $other : CrossingEvent(
+        $plates: java.util.Set() from accumulate(
+            $other: CrossingEvent(
                 companyName == $company,
                 borderCrossingId == $border,
                 destinationCountry == $dest,
-                this != $e,
+                plateNumber != $plate,
                 timestamp >= ($ts - 1800000),
                 timestamp <= $ts
             ),
-            count($other)
+            collectSet($other.getPlateNumber())
         )
-        not CepAlarm(plateNumber == $e.plateNumber,
+        eval($plates.size() >= 3)
+        not CepAlarm(plateNumber == $plate,
                      type == CepAlarmType.COORDINATED_GROUP)
     then
-        insert(new CepAlarm(CepAlarmType.COORDINATED_GROUP, $e.getPlateNumber(),
+        insert(new CepAlarm(CepAlarmType.COORDINATED_GROUP, $plate,
             "Koordinisana grupa: " + $company + ", prelaz " + $border + ", dest " + $dest,
-            System.currentTimeMillis()));
+            $ts));
 end
 
 
@@ -66,7 +68,7 @@ rule "CEP - border avoidance"
             plateNumber == $plate,
             borderCrossingId != $border1,
             this != $e1,
-            timestamp >= ($ts1 - 86400000),
+            timestamp >= ($ts1 - 86400000),   // 24h
             timestamp <= ($ts1 + 86400000)
         )
         not CepAlarm(plateNumber == $plate,
@@ -75,5 +77,5 @@ rule "CEP - border avoidance"
         insert(new CepAlarm(CepAlarmType.BORDER_AVOIDANCE, $plate,
             "Vozilo " + $plate + " koristi razlicite prelaze: "
             + $border1 + " i " + $e2.getBorderCrossingId(),
-            System.currentTimeMillis()));
+            $ts1));
 end

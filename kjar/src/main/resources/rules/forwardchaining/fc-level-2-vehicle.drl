@@ -1,4 +1,4 @@
-package rules;
+package rules.forwardchaining;
 
 import com.ftn.sbnz.model.models.Driver;
 import com.ftn.sbnz.model.models.VehicleRegistration;
@@ -72,7 +72,7 @@ end
 
 
 rule "Total weight overload - domestic driver"
-    salience 100
+    salience 80
     when
         DriverValidity(status != ValidityStatus.ARREST)
         $driver: Driver(foreignCitizen == false)
@@ -89,7 +89,7 @@ end
 
 
 rule "Total weight overload - foreign driver"
-    salience 100
+    salience 80
     when
         DriverValidity(status != ValidityStatus.ARREST)
         $driver: Driver(foreignCitizen == true)
@@ -106,7 +106,7 @@ end
 
 
 rule "Determine VehicleValidity FORBIDDEN"
-    salience 50
+    salience 10
     when
         DriverValidity(status != ValidityStatus.ARREST)
         Violation(isVehicleForbiddenType())
@@ -117,7 +117,7 @@ end
 
 
 rule "Determine VehicleValidity PROBLEM"
-    salience 49
+    salience 9
     when
         DriverValidity(status != ValidityStatus.ARREST)
         not Violation(isVehicleForbiddenType())
@@ -129,7 +129,7 @@ end
 
 
 rule "Determine VehicleValidity VALID"
-    salience 48
+    salience 8
     when
         DriverValidity(status != ValidityStatus.ARREST)
         not Violation(isVehicleForbiddenType())

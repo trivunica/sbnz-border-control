@@ -1,4 +1,4 @@
-package rules;
+package rules.forwardchaining;
 
 global java.time.LocalDate today;
 global java.time.LocalDate ninetyDaysFromNow;
@@ -168,7 +168,7 @@ end
 
 
 rule "Determine DriverValidity ARREST"
-    salience 50
+    salience 10
     when
         Violation(type == ViolationType.INTERPOL_WARRANT
                || type == ViolationType.DOMESTIC_WARRANT)
@@ -179,7 +179,7 @@ end
 
 
 rule "Determine DriverValidity FORBIDDEN"
-    salience 49
+    salience 9
     when
         not Violation(isArrestType())
         Violation(isDriverForbiddenType())
@@ -190,7 +190,7 @@ end
 
 
 rule "Determine DriverValidity PROBLEM"
-    salience 48
+    salience 8
     when
         not Violation(isArrestType())
         not Violation(isDriverForbiddenType())
@@ -202,7 +202,7 @@ end
 
 
 rule "Determine DriverValidity VALID"
-    salience 47
+    salience 7
     when
         not Violation(isArrestType())
         not Violation(isDriverForbiddenType())

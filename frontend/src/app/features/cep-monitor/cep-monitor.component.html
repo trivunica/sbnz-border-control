@@ -1,0 +1,143 @@
+<div class="page-shell">
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="brand">
+                <i class="ti ti-radar brand-icon" aria-hidden="true"></i>
+                <div>
+                    <span class="brand-title">CEP Monitor</span>
+                    <span class="brand-sub">Detekcija sumnjivih obrazaca u realnom vremenu</span>
+                </div>
+            </div>
+            <a routerLink="/" class="topbar-link">
+                <i class="ti ti-arrow-left" aria-hidden="true"></i> Granična provera
+            </a>
+        </div>
+    </header>
+
+    <main class="cep-main">
+
+        <div class="stats-row">
+            <div class="stat-card">
+                <span class="stat-value">{{ alarms().length }}</span>
+                <span class="stat-label">Aktivnih alarma</span>
+            </div>
+            <div class="stat-card stat-freq">
+                <span class="stat-value">{{ alarms() | alarmCount:'FREQUENT' }}</span>
+                <span class="stat-label">Učestali prelasci</span>
+            </div>
+            <div class="stat-card stat-coord">
+                <span class="stat-value">{{ alarms() | alarmCount:'COORDIN' }}</span>
+                <span class="stat-label">Koordinisane grupe</span>
+            </div>
+            <div class="stat-card stat-avoid">
+                <span class="stat-value">{{ alarms() | alarmCount:'AVOID' }}</span>
+                <span class="stat-label">Izbegavanja prelaza</span>
+            </div>
+        </div>
+
+        <div class="toolbar-row">
+            <div class="toolbar-left">
+                <h2 class="section-title">
+                    Aktivni alarmi
+                    <span class="alarm-count-badge" *ngIf="alarms().length">{{ alarms().length }}</span>
+                </h2>
+            </div>
+            <div class="toolbar-right">
+                <input class="filter-input"
+                       placeholder="Filtriraj po tablicama..."
+                       [value]="filterPlate()"
+                       (input)="filterPlate.set($any($event.target).value)" />
+                <button class="btn-refresh" (click)="loadAlarms()" type="button" aria-label="Osveži">
+                    <i class="ti ti-refresh" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+
+        <div *ngIf="!filteredAlarms().length" class="no-alarms">
+            <i class="ti ti-circle-check" aria-hidden="true"></i>
+            <span>{{ filterPlate() ? 'Nema alarma za unete tablice.' : 'Nema aktivnih alarma.' }}</span>
+        </div>
+
+        <div class="alarms-grid" *ngIf="filteredAlarms().length">
+
+            <!-- Učestali prelasci -->
+            <div class="alarm-column">
+                <div class="col-header col-header--freq">
+                    <i class="ti ti-refresh" aria-hidden="true"></i>
+                    <span>Učestali prelasci</span>
+                    <span class="col-badge" *ngIf="alarmsOfType('FREQUENT').length">
+                        {{ alarmsOfType('FREQUENT').length }}
+                    </span>
+                </div>
+                <div *ngIf="!alarmsOfType('FREQUENT').length" class="col-empty">
+                    <i class="ti ti-circle-check"></i> Nema alarma
+                </div>
+                <div *ngFor="let alarm of alarmsOfType('FREQUENT')"
+                     class="alarm-card alarm-freq">
+                    <div class="alarm-top">
+                        <div class="alarm-meta">
+                            <div class="alarm-plate">{{ alarm.plateNumber }}</div>
+                        </div>
+                        <span *ngIf="alarm.crossedAt" class="alarm-time">
+                            {{ formatTime(alarm.crossedAt) }}
+                        </span>
+                    </div>
+                    <div class="alarm-message">{{ alarm.message }}</div>
+                </div>
+            </div>
+
+            <!-- Koordinisane grupe -->
+            <div class="alarm-column">
+                <div class="col-header col-header--coord">
+                    <i class="ti ti-users-group" aria-hidden="true"></i>
+                    <span>Koordinisane grupe</span>
+                    <span class="col-badge" *ngIf="alarmsOfType('COORDIN').length">
+                        {{ alarmsOfType('COORDIN').length }}
+                    </span>
+                </div>
+                <div *ngIf="!alarmsOfType('COORDIN').length" class="col-empty">
+                    <i class="ti ti-circle-check"></i> Nema alarma
+                </div>
+                <div *ngFor="let alarm of alarmsOfType('COORDIN')"
+                     class="alarm-card alarm-coord">
+                    <div class="alarm-top">
+                        <div class="alarm-meta">
+                            <div class="alarm-plate">{{ alarm.plateNumber }}</div>
+                        </div>
+                        <span *ngIf="alarm.crossedAt" class="alarm-time">
+                            {{ formatTime(alarm.crossedAt) }}
+                        </span>
+                    </div>
+                    <div class="alarm-message">{{ alarm.message }}</div>
+                </div>
+            </div>
+
+            <!-- Izbegavanja prelaza -->
+            <div class="alarm-column">
+                <div class="col-header col-header--avoid">
+                    <i class="ti ti-route-alt-left" aria-hidden="true"></i>
+                    <span>Izbegavanja prelaza</span>
+                    <span class="col-badge" *ngIf="alarmsOfType('AVOID').length">
+                        {{ alarmsOfType('AVOID').length }}
+                    </span>
+                </div>
+                <div *ngIf="!alarmsOfType('AVOID').length" class="col-empty">
+                    <i class="ti ti-circle-check"></i> Nema alarma
+                </div>
+                <div *ngFor="let alarm of alarmsOfType('AVOID')"
+                     class="alarm-card alarm-avoid">
+                    <div class="alarm-top">
+                        <div class="alarm-meta">
+                            <div class="alarm-plate">{{ alarm.plateNumber }}</div>
+                        </div>
+                        <span *ngIf="alarm.crossedAt" class="alarm-time">
+                            {{ formatTime(alarm.crossedAt) }}
+                        </span>
+                    </div>
+                    <div class="alarm-message">{{ alarm.message }}</div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
