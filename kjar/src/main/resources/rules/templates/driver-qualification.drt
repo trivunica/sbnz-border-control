@@ -7,7 +7,7 @@ EXPERIENCE_VIOLATION_TYPE
 BASE_FINE
 CAN_CONTINUE
 
-package rules
+package rules.templates
 
 import com.ftn.sbnz.model.models.Driver;
 import com.ftn.sbnz.model.models.CMRDocument;

@@ -1,4 +1,4 @@
-package rules;
+package rules.forwardchaining;
 
 global java.time.LocalDate today;
 global java.time.LocalDate ninetyDaysFromNow;

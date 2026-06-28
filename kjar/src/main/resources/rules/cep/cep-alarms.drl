@@ -1,4 +1,4 @@
-package cep
+package rules.cep
 
 import com.ftn.sbnz.model.models.CrossingEvent;
 import com.ftn.sbnz.model.models.CepAlarm;

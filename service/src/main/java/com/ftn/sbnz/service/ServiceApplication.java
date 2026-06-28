@@ -33,10 +33,10 @@ public class ServiceApplication {
 		ExternalSpreadsheetCompiler converter = new ExternalSpreadsheetCompiler();
 
 		String[] originalDrls = {
-				"rules/forward-chaining/fc-level-1-driver.drl",
-				"rules/forward-chaining/fc-level-2-vehicle.drl",
-				"rules/forward-chaining/fc-level-3-permits.drl",
-				"rules/forward-chaining/fc-level-4-decision.drl",
+                "rules/forwardchaining/fc-level-1-driver.drl",
+                "rules/forwardchaining/fc-level-2-vehicle.drl",
+                "rules/forwardchaining/fc-level-3-permits.drl",
+                "rules/forwardchaining/fc-level-4-decision.drl",
 				"rules/cep/cep-alarms.drl",
 		};
 		for (String path : originalDrls) {
@@ -48,15 +48,15 @@ public class ServiceApplication {
 			}
 		}
 
-		compileTemplate(kfs, converter, originalContainer, "rules/templates/bilateral-permit.drt", "rules/templates/bilateral-permit-data.xls", "src/main/resources/rules/bilateral.drl");
-		compileTemplate(kfs, converter, originalContainer, "rules/templates/driver-qualification.drt", "rules/templates/driver-qualification-data.xls", "src/main/resources/rules/driver.drl");
+		compileTemplate(kfs, converter, originalContainer, "rules/templates/bilateral-permit.drt", "rules/templates/bilateral-permit-data.xls", "src/main/resources/rules/templates/bilateral.drl");
+		compileTemplate(kfs, converter, originalContainer, "rules/templates/driver-qualification.drt", "rules/templates/driver-qualification-data.xls", "src/main/resources/rules/templates/driver.drl");
 
 		kfs.writeKModuleXML(
 				"<kmodule xmlns='http://jboss.org/kie/6.0.0/kmodule'>" +
-						"  <kbase name='forwardKBase' packages='rules' >" +
+						"  <kbase name='forwardKBase' packages='rules.forwardchaining, rules.templates' >" +
 						"    <ksession name='forwardKSession'/>" +
 						"  </kbase>" +
-						"  <kbase name='cepKBase' packages='cep' eventProcessingMode='stream'>" +
+						"  <kbase name='cepKBase' packages='rules.cep' eventProcessingMode='stream'>" +
 						"    <ksession name='cepKSession' type='stateful' clockType='realtime'/>" +
 						"  </kbase>" +
 						"</kmodule>"

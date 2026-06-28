@@ -1,4 +1,4 @@
-package rules;
+package rules.forwardchaining;
 
 import com.ftn.sbnz.model.models.Driver;
 import com.ftn.sbnz.model.models.Violation;
