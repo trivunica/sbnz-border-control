@@ -1,572 +1,602 @@
 <div class="page-shell">
-    <header class="topbar">
-        <div class="topbar-inner">
-            <div class="brand">
-                <i class="ti ti-shield-check brand-icon" aria-hidden="true"></i>
-                <div>
-                    <span class="brand-title">Granična kontrola</span>
-                    <span class="brand-sub">Ekspertski sistem za kontrolu teretnih vozila</span>
-                </div>
-            </div>
-            <a routerLink="/cep" class="topbar-link">
-                <i class="ti ti-bell" aria-hidden="true"></i> CEP monitor
-            </a>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <i class="ti ti-shield-check brand-icon" aria-hidden="true"></i>
+        <div>
+          <span class="brand-title">Granična kontrola</span>
+          <span class="brand-sub">Ekspertski sistem za kontrolu teretnih vozila na graničnom prelazu</span>
         </div>
-    </header>
+      </div>
+      <a routerLink="/cep" class="topbar-link">
+        <i class="ti ti-bell" aria-hidden="true"></i> CEP monitor
+      </a>
+    </div>
+  </header>
 
-    <main class="main-grid">
-        <aside class="sidebar">
-            <nav class="step-nav" aria-label="Koraci forme">
-                <button
-                        *ngFor="let s of sections; let i = index"
-                        class="step-btn"
-                        [class.active]="activeSection() === i"
-                        (click)="goTo(i)"
-                        type="button">
-                    <span class="step-num">{{ i + 1 }}</span>
-                    <span class="step-lbl">{{ s.label }}</span>
-                </button>
-            </nav>
+  <main class="main-grid">
+    <aside class="sidebar">
+      <nav class="step-nav" aria-label="Koraci forme">
+        <button
+          *ngFor="let s of sections; let i = index"
+          class="step-btn"
+          [class.active]="activeSection() === i"
+          (click)="goTo(i)"
+          type="button">
+          <span class="step-num">{{ i + 1 }}</span>
+          <span class="step-lbl">{{ s.label }}</span>
+        </button>
+      </nav>
 
-            <div class="sidebar-footer">
-                <button
-                        class="btn-mrz-toggle"
-                        (click)="showMrzScanner.set(!showMrzScanner())"
-                        type="button">
-                    <i class="ti ti-scan" aria-hidden="true"></i>
-                    {{ showMrzScanner() ? 'Zatvori skener' : 'Skeniraj MRZ' }}
-                </button>
+      <div class="sidebar-footer">
+        <button
+          class="btn-mrz-toggle"
+          (click)="showMrzScanner.set(!showMrzScanner())"
+          type="button">
+          <i class="ti ti-scan" aria-hidden="true"></i>
+          {{ showMrzScanner() ? 'Zatvori skener' : 'Skeniraj MRZ' }}
+        </button>
+      </div>
+    </aside>
+
+    <div class="content-col">
+
+      <!-- MRZ skener panel -->
+      <div *ngIf="showMrzScanner()" class="mrz-panel">
+        <div class="mrz-panel-header">
+          <i class="ti ti-scan" aria-hidden="true"></i>
+          Čitač MRZ zone dokumenta
+          <button
+            class="mrz-close"
+            (click)="showMrzScanner.set(false)"
+            type="button"
+            aria-label="Zatvori">
+            <i class="ti ti-x" aria-hidden="true"></i>
+          </button>
+        </div>
+        <p class="mrz-hint">
+          Nakon skeniranja, polja
+          <strong>Ime, Prezime, Broj dokumenta, Datum isteka</strong> i
+          <strong>Državljanstvo</strong> biće automatski popunjena.
+        </p>
+        <app-mrz-scanner (mrzScanned)="onMrzScanned($event)" />
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+
+        <!-- ******************** KORAK 0 - VOZAČ ******************** -->
+        <section class="form-section" [class.visible]="activeSection() === 0" formGroupName="driver">
+          <h2 class="section-title">Podaci o vozaču</h2>
+
+          <div class="field-grid">
+            <div class="field">
+              <label for="name">Ime</label>
+              <input id="name" formControlName="name" placeholder="npr. Marko" />
             </div>
-        </aside>
+            <div class="field">
+              <label for="surname">Prezime</label>
+              <input id="surname" formControlName="surname" placeholder="npr. Marković" />
+            </div>
+            <div class="field">
+              <label for="citizenship">Državljanstvo (ISO)</label>
+              <input id="citizenship" formControlName="citizenship"
+                     placeholder="npr. RS" maxlength="3" />
+            </div>
+            <div class="field">
+              <label for="dob">Datum rođenja</label>
+              <input id="dob" type="date" formControlName="dob" />
+            </div>
+          </div>
 
-        <div class="content-col">
+          <div class="checkbox-grid">
+            <label class="cb-row">
+              <input type="checkbox" formControlName="foreignCitizen" />
+              <span>Strani državljanin</span>
+            </label>
+            <label class="cb-row">
+              <input type="checkbox" formControlName="interpolWarrant" />
+              <span>Interpol potraga</span>
+            </label>
+            <label class="cb-row">
+              <input type="checkbox" formControlName="domesticWarrant" />
+              <span>Domaća potraga</span>
+            </label>
+            <label class="cb-row">
+              <input type="checkbox" formControlName="photoMatches" />
+              <span>Fotografija odgovara licu</span>
+            </label>
+            <label class="cb-row">
+              <input type="checkbox" formControlName="documentReportedStolen" />
+              <span>Dokument prijavljen kao ukraden</span>
+            </label>
+            <label class="cb-row">
+              <input type="checkbox" formControlName="hasVisa" />
+              <span>Poseduje vizu</span>
+            </label>
+            <label class="cb-row">
+              <input type="checkbox" formControlName="hasSupplementaryDocument" />
+              <span>Poseduje dopunski propusni dokument</span>
+            </label>
+          </div>
 
-            <!-- MRZ skener panel -->
-            <div *ngIf="showMrzScanner()" class="mrz-panel">
-                <div class="mrz-panel-header">
-                    <i class="ti ti-scan" aria-hidden="true"></i>
-                    Čitač MRZ zone dokumenta
-                    <button
-                            class="mrz-close"
-                            (click)="showMrzScanner.set(false)"
-                            type="button"
-                            aria-label="Zatvori">
-                        <i class="ti ti-x" aria-hidden="true"></i>
-                    </button>
-                </div>
-                <p class="mrz-hint">
-                    Nakon skeniranja, polja
-                    <strong>Ime, Prezime, Broj dokumenta, Datum isteka</strong> i
-                    <strong>Državljanstvo</strong> biće automatski popunjena.
-                </p>
-                <app-mrz-scanner (mrzScanned)="onMrzScanned($event)" />
+          <div *ngIf="isForeign()" class="field-grid" style="margin-top:1rem">
+            <div class="field">
+              <label for="funds">Finansijska sredstva (EUR)</label>
+              <input id="funds" type="number" formControlName="financialFunds"
+                     placeholder="npr. 500" />
+            </div>
+            <div class="field">
+              <label for="stay">Planirani dani boravka</label>
+              <input id="stay" type="number" formControlName="plannedStayDays"
+                     placeholder="npr. 5" />
+            </div>
+          </div>
+
+          <div class="section-actions">
+            <button type="button" class="btn-next" (click)="goTo(1)">
+              Dalje <i class="ti ti-arrow-right" aria-hidden="true"></i>
+            </button>
+          </div>
+        </section>
+
+        <!-- ******************** KORAK 1 - DOKUMENTI ******************** -->
+        <section class="form-section" [class.visible]="activeSection() === 1">
+          <h2 class="section-title">Dokumenti</h2>
+
+          <div class="subsection" formGroupName="drivingLicence">
+            <h3 class="sub-title">Vozačka dozvola</h3>
+            <div class="field-grid">
+              <div class="field">
+                <label>Broj dozvole</label>
+                <input formControlName="licenceNumber" placeholder="npr. RS-123456" />
+              </div>
+              <div class="field">
+                <label>Datum isteka</label>
+                <input type="date" formControlName="expiryDate" />
+              </div>
+              <div class="field">
+                <label>Kategorija</label>
+                <select formControlName="category">
+                  <option value="CE">CE</option>
+                  <option value="C">C</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="subsection" formGroupName="identificationDocument">
+            <h3 class="sub-title">Identifikacioni dokument</h3>
+            <div class="field-grid">
+              <div class="field">
+                <label>Tip dokumenta</label>
+                <select formControlName="type">
+                  <option value="PASSPORT">Pasoš</option>
+                  <option value="ID_CARD">Lična karta</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Broj dokumenta</label>
+                <input formControlName="documentNumber" placeholder="npr. P-RS-001" />
+              </div>
+              <div class="field">
+                <label>Zemlja izdavanja</label>
+                <input formControlName="issuingCountry"
+                       placeholder="npr. RS" maxlength="3" />
+              </div>
+              <div class="field">
+                <label>Datum isteka</label>
+                <input type="date" formControlName="expiryDate" />
+              </div>
+            </div>
+          </div>
+
+          <div class="section-actions">
+            <button type="button" class="btn-back" (click)="goTo(0)">
+              <i class="ti ti-arrow-left" aria-hidden="true"></i> Nazad
+            </button>
+            <button type="button" class="btn-next" (click)="goTo(2)">
+              Dalje <i class="ti ti-arrow-right" aria-hidden="true"></i>
+            </button>
+          </div>
+        </section>
+
+        <!-- ******************** KORAK 2 - VOZILO ******************** -->
+        <section class="form-section" [class.visible]="activeSection() === 2">
+          <h2 class="section-title">Vozilo</h2>
+
+          <div class="subsection" formGroupName="vehicleRegistration">
+            <h3 class="sub-title">Saobraćajna dozvola</h3>
+            <div class="field-grid">
+              <div class="field">
+                <label>Registarski broj</label>
+                <input formControlName="registrationNumber"
+                       placeholder="npr. NS-123-AB" />
+              </div>
+              <div class="field">
+                <label>Datum isteka registracije</label>
+                <input type="date" formControlName="expiryDate" />
+              </div>
+              <div class="field">
+                <label>Nosivost prikolice (kg)</label>
+                <input type="number" formControlName="trailerCapacity"
+                       placeholder="npr. 24000" />
+              </div>
+              <div class="field">
+                <label>Masa vučnog vozila (kg)</label>
+                <input type="number" formControlName="truckWeight"
+                       placeholder="npr. 8200" />
+              </div>
+            </div>
+          </div>
+
+          <div class="subsection">
+            <label class="cb-row">
+              <input type="checkbox"
+                     [formControl]="$any(form.get('includeLiveWeight'))" />
+              <span>Vozilo je izmereno na vagi prelaza</span>
+            </label>
+
+            <div *ngIf="includeLiveWeight()"
+                 formGroupName="liveWeightMeasurement"
+                 class="field-grid" style="margin-top:1rem">
+              <div class="field">
+                <label>Izmerena ukupna masa (kg)</label>
+                <input type="number" formControlName="measuredTotalWeight"
+                       placeholder="npr. 35000" />
+              </div>
+              <label class="cb-row"
+                     style="align-self:flex-end;padding-bottom:6px">
+                <input type="checkbox" formControlName="visualSag" />
+                <span>Vidno uleganje zadnjeg dela prikolice</span>
+              </label>
             </div>
 
-            <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
-
-                <!-- ******************** KORAK 0 - VOZAČ ******************** -->
-                <section class="form-section" [class.visible]="activeSection() === 0" formGroupName="driver">
-                    <h2 class="section-title">Podaci o vozaču</h2>
-
-                    <div class="field-grid">
-                        <div class="field">
-                            <label for="name">Ime</label>
-                            <input id="name" formControlName="name" placeholder="npr. Marko" />
-                        </div>
-                        <div class="field">
-                            <label for="surname">Prezime</label>
-                            <input id="surname" formControlName="surname" placeholder="npr. Marković" />
-                        </div>
-                        <div class="field">
-                            <label for="citizenship">Državljanstvo (ISO)</label>
-                            <input id="citizenship" formControlName="citizenship"
-                                   placeholder="npr. RS" maxlength="3" />
-                        </div>
-                        <div class="field">
-                            <label for="dob">Datum rođenja</label>
-                            <input id="dob" type="date" formControlName="dob" />
-                        </div>
-                    </div>
-
-                    <div class="checkbox-grid">
-                        <label class="cb-row">
-                            <input type="checkbox" formControlName="foreignCitizen" />
-                            <span>Strani državljanin</span>
-                        </label>
-                        <label class="cb-row">
-                            <input type="checkbox" formControlName="interpolWarrant" />
-                            <span>Interpol potraga</span>
-                        </label>
-                        <label class="cb-row">
-                            <input type="checkbox" formControlName="domesticWarrant" />
-                            <span>Domaća potraga</span>
-                        </label>
-                        <label class="cb-row">
-                            <input type="checkbox" formControlName="photoMatches" />
-                            <span>Fotografija odgovara licu</span>
-                        </label>
-                        <label class="cb-row">
-                            <input type="checkbox" formControlName="documentReportedStolen" />
-                            <span>Dokument prijavljen kao ukraden</span>
-                        </label>
-                        <label class="cb-row">
-                            <input type="checkbox" formControlName="hasVisa" />
-                            <span>Poseduje vizu</span>
-                        </label>
-                        <label class="cb-row">
-                            <input type="checkbox" formControlName="hasSupplementaryDocument" />
-                            <span>Poseduje dopunski propusni dokument</span>
-                        </label>
-                    </div>
-
-                    <div *ngIf="isForeign()" class="field-grid" style="margin-top:1rem">
-                        <div class="field">
-                            <label for="funds">Finansijska sredstva (EUR)</label>
-                            <input id="funds" type="number" formControlName="financialFunds"
-                                   placeholder="npr. 500" />
-                        </div>
-                        <div class="field">
-                            <label for="stay">Planirani dani boravka</label>
-                            <input id="stay" type="number" formControlName="plannedStayDays"
-                                   placeholder="npr. 5" />
-                        </div>
-                    </div>
-
-                    <div class="section-actions">
-                        <button type="button" class="btn-next" (click)="goTo(1)">
-                            Dalje <i class="ti ti-arrow-right" aria-hidden="true"></i>
-                        </button>
-                    </div>
-                </section>
-
-                <!-- ******************** KORAK 1 - DOKUMENTI ******************** -->
-                <section class="form-section" [class.visible]="activeSection() === 1">
-                    <h2 class="section-title">Dokumenti</h2>
-
-                    <div class="subsection" formGroupName="drivingLicence">
-                        <h3 class="sub-title">Vozačka dozvola</h3>
-                        <div class="field-grid">
-                            <div class="field">
-                                <label>Broj dozvole</label>
-                                <input formControlName="licenceNumber" placeholder="npr. RS-123456" />
-                            </div>
-                            <div class="field">
-                                <label>Datum isteka</label>
-                                <input type="date" formControlName="expiryDate" />
-                            </div>
-                            <div class="field">
-                                <label>Kategorija</label>
-                                <select formControlName="category">
-                                    <option value="CE">CE</option>
-                                    <option value="C">C</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="subsection" formGroupName="identificationDocument">
-                        <h3 class="sub-title">Identifikacioni dokument</h3>
-                        <div class="field-grid">
-                            <div class="field">
-                                <label>Tip dokumenta</label>
-                                <select formControlName="type">
-                                    <option value="PASSPORT">Pasoš</option>
-                                    <option value="ID_CARD">Lična karta</option>
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label>Broj dokumenta</label>
-                                <input formControlName="documentNumber" placeholder="npr. P-RS-001" />
-                            </div>
-                            <div class="field">
-                                <label>Zemlja izdavanja</label>
-                                <input formControlName="issuingCountry"
-                                       placeholder="npr. RS" maxlength="3" />
-                            </div>
-                            <div class="field">
-                                <label>Datum isteka</label>
-                                <input type="date" formControlName="expiryDate" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="section-actions">
-                        <button type="button" class="btn-back" (click)="goTo(0)">
-                            <i class="ti ti-arrow-left" aria-hidden="true"></i> Nazad
-                        </button>
-                        <button type="button" class="btn-next" (click)="goTo(2)">
-                            Dalje <i class="ti ti-arrow-right" aria-hidden="true"></i>
-                        </button>
-                    </div>
-                </section>
-
-                <!-- ******************** KORAK 2 - VOZILO ******************** -->
-                <section class="form-section" [class.visible]="activeSection() === 2">
-                    <h2 class="section-title">Vozilo</h2>
-
-                    <div class="subsection" formGroupName="vehicleRegistration">
-                        <h3 class="sub-title">Saobraćajna dozvola</h3>
-                        <div class="field-grid">
-                            <div class="field">
-                                <label>Registarski broj</label>
-                                <input formControlName="registrationNumber"
-                                       placeholder="npr. NS-123-AB" />
-                            </div>
-                            <div class="field">
-                                <label>Datum isteka registracije</label>
-                                <input type="date" formControlName="expiryDate" />
-                            </div>
-                            <div class="field">
-                                <label>Nosivost prikolice (kg)</label>
-                                <input type="number" formControlName="trailerCapacity"
-                                       placeholder="npr. 24000" />
-                            </div>
-                            <div class="field">
-                                <label>Masa vučnog vozila (kg)</label>
-                                <input type="number" formControlName="truckWeight"
-                                       placeholder="npr. 8200" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="subsection">
-                        <label class="cb-row">
-                            <input type="checkbox"
-                                   [formControl]="$any(form.get('includeLiveWeight'))" />
-                            <span>Vozilo je izmereno na vagi prelaza</span>
-                        </label>
-
-                        <div *ngIf="includeLiveWeight()"
-                             formGroupName="liveWeightMeasurement"
-                             class="field-grid" style="margin-top:1rem">
-                            <div class="field">
-                                <label>Izmerena ukupna masa (kg)</label>
-                                <input type="number" formControlName="measuredTotalWeight"
-                                       placeholder="npr. 35000" />
-                            </div>
-                            <label class="cb-row"
-                                   style="align-self:flex-end;padding-bottom:6px">
-                                <input type="checkbox" formControlName="visualSag" />
-                                <span>Vidno uleganje zadnjeg dela prikolice</span>
-                            </label>
-                        </div>
-
-                        <p *ngIf="!includeLiveWeight()"
-                           style="margin-top:8px;font-size:12px;
+            <p *ngIf="!includeLiveWeight()"
+               style="margin-top:8px;font-size:12px;
                       color:var(--color-text-tertiary);line-height:1.5">
-                            Ako vozilo nije izmereno na vagi, sistem koristi masu robe
-                            iz CMR-a i nosivost prikolice iz saobraćajne dozvole za
-                            proveru pretovara.
-                        </p>
-                    </div>
+              Ako vozilo nije izmereno na vagi, sistem koristi masu robe
+              iz CMR-a i nosivost prikolice iz saobraćajne dozvole za
+              proveru pretovara.
+            </p>
+          </div>
 
-                    <div class="section-actions">
-                        <button type="button" class="btn-back" (click)="goTo(1)">
-                            <i class="ti ti-arrow-left" aria-hidden="true"></i> Nazad
-                        </button>
-                        <button type="button" class="btn-next" (click)="goTo(3)">
-                            Dalje <i class="ti ti-arrow-right" aria-hidden="true"></i>
-                        </button>
-                    </div>
-                </section>
+          <div class="section-actions">
+            <button type="button" class="btn-back" (click)="goTo(1)">
+              <i class="ti ti-arrow-left" aria-hidden="true"></i> Nazad
+            </button>
+            <button type="button" class="btn-next" (click)="goTo(3)">
+              Dalje <i class="ti ti-arrow-right" aria-hidden="true"></i>
+            </button>
+          </div>
+        </section>
 
-                <!-- ******************** KORAK 3 - CMR TERET ******************** -->
-                <section class="form-section" [class.visible]="activeSection() === 3"
-                         formGroupName="cmrDocument">
-                    <h2 class="section-title">CMR teretni list</h2>
+        <!-- ******************** KORAK 3 - CMR TERET ******************** -->
+        <section class="form-section" [class.visible]="activeSection() === 3"
+                 formGroupName="cmrDocument">
+          <h2 class="section-title">CMR teretni list</h2>
 
-                    <div class="field-grid">
-                        <div class="field">
-                            <label>Zemlja porekla robe</label>
-                            <input formControlName="originCountry"
-                                   placeholder="npr. MK" maxlength="3" />
-                        </div>
-                        <div class="field">
-                            <label>Zemlja odredišta</label>
-                            <input formControlName="destinationCountry"
-                                   placeholder="npr. BA" maxlength="3" />
-                        </div>
-                        <div class="field">
-                            <label>Masa robe (kg)</label>
-                            <input type="number" formControlName="goodsWeight"
-                                   placeholder="npr. 26500" />
-                        </div>
-                        <div class="field" style="grid-column:1/-1">
-                            <label>Opis robe</label>
-                            <input formControlName="goodsDescription"
-                                   placeholder="npr. adr opasne materije / livestock / frozen food" />
-                        </div>
-                        <div class="field">
-                            <label>Pošiljalac</label>
-                            <input formControlName="senderIdentity"
-                                   placeholder="npr. Firma DOO" />
-                        </div>
-                        <div class="field">
-                            <label>Primalac</label>
-                            <input formControlName="receiverIdentity"
-                                   placeholder="npr. Primalac AD" />
-                        </div>
-                    </div>
-
-                    <div class="section-actions">
-                        <button type="button" class="btn-back" (click)="goTo(2)">
-                            <i class="ti ti-arrow-left" aria-hidden="true"></i> Nazad
-                        </button>
-                        <button type="button" class="btn-next" (click)="goTo(4)">
-                            Dalje <i class="ti ti-arrow-right" aria-hidden="true"></i>
-                        </button>
-                    </div>
-                </section>
-
-                <!-- ******************** KORAK 4 - DOZVOLE ******************** -->
-                <section class="form-section" [class.visible]="activeSection() === 4">
-                    <h2 class="section-title">Dozvole za prevoz</h2>
-
-                    <div class="permits-list" formArrayName="transportPermits">
-                        <div
-                                *ngFor="let permit of permits.controls; let i = index"
-                                [formGroupName]="i"
-                                class="permit-card">
-                            <div class="permit-header">
-                                <span class="permit-num">Dozvola {{ i + 1 }}</span>
-                                <button type="button" class="btn-rm"
-                                        (click)="removePermit(i)" aria-label="Ukloni">
-                                    <i class="ti ti-x" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                            <div class="field-grid">
-                                <div class="field">
-                                    <label>Tip dozvole</label>
-                                    <select formControlName="type">
-                                        <option value="CEMT">CEMT</option>
-                                        <option value="BILATERAL">Bilateralna</option>
-                                        <option value="TRANSIT">Tranzitna</option>
-                                        <option value="THIRD_COUNTRY">Treće zemlje</option>
-                                    </select>
-                                </div>
-                                <div class="field">
-                                    <label>Datum isteka</label>
-                                    <input type="date" formControlName="expiryDate" />
-                                </div>
-                                <div class="field" style="grid-column:1/-1">
-                                    <label>Pokrivene rute (npr. RS-BA ili ALL)</label>
-                                    <input formControlName="coveredRoutes"
-                                           placeholder="npr. RS-BA" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button type="button" class="btn-add" (click)="addPermit()">
-                        <i class="ti ti-plus" aria-hidden="true"></i> Dodaj dozvolu
-                    </button>
-
-                    <div class="section-actions" style="margin-top:2rem">
-                        <button type="button" class="btn-back" (click)="goTo(3)">
-                            <i class="ti ti-arrow-left" aria-hidden="true"></i> Nazad
-                        </button>
-                        <button type="button" class="btn-next" (click)="goTo(5)">
-                            Dalje <i class="ti ti-arrow-right" aria-hidden="true"></i>
-                        </button>
-                    </div>
-                </section>
-
-                <!-- ******************** KORAK 5 - SERTIFIKATI ******************** -->
-                <section class="form-section" [class.visible]="activeSection() === 5">
-                    <h2 class="section-title">Sertifikati vozača</h2>
-
-                    <p class="section-hint" style="margin-bottom: 1rem">
-                        Dodaj sertifikate samo ako vozač prevozi specijalnu robu
-                        (ADR, veterinarski, ATP, itd). Ako vozač nema potreban
-                        sertifikat za vrstu robe u CMR-u, sistem će registrovati kršenje.
-                    </p>
-
-                    <div class="permits-list" formArrayName="driverCertificates">
-                        <div
-                                *ngFor="let cert of certificates.controls; let i = index"
-                                [formGroupName]="i"
-                                class="permit-card">
-                            <div class="permit-header">
-                                <span class="permit-num">Sertifikat {{ i + 1 }}</span>
-                                <button type="button" class="btn-rm"
-                                        (click)="removeCertificate(i)" aria-label="Ukloni">
-                                    <i class="ti ti-x" aria-hidden="true"></i>
-                                </button>
-                            </div>
-                            <div class="field-grid">
-                                <div class="field">
-                                    <label>Tip sertifikata</label>
-                                    <select formControlName="goodsCertificate">
-                                        <option value="ADR_CERTIFICATE">ADR (opasne materije)</option>
-                                        <option value="VETERINARY_CERTIFICATE">Veterinarski (žive životinje)</option>
-                                        <option value="ATP_CERTIFICATE">ATP (rashladni transport)</option>
-                                        <option value="EXPLOSIVES_CERTIFICATE">Eksplozivi</option>
-                                        <option value="WASTE_TRANSPORT_CERTIFICATE">Otpad</option>
-                                        <option value="RADIOACTIVE_CERTIFICATE">Radioaktivne materije</option>
-                                        <option value="PHARMACEUTICAL_CERTIFICATE">Farmaceutski proizvodi</option>
-                                    </select>
-                                </div>
-                                <div class="field">
-                                    <label>Godine iskustva</label>
-                                    <input type="number" formControlName="yearsExperience"
-                                           placeholder="npr. 2" min="0" />
-                                </div>
-                                <div class="field">
-                                    <label>Datum isteka sertifikata</label>
-                                    <input type="date" formControlName="expiryDate" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button type="button" class="btn-add" (click)="addCertificate()">
-                        <i class="ti ti-plus" aria-hidden="true"></i> Dodaj sertifikat
-                    </button>
-
-                    <div class="field" style="margin-top: 1.5rem; margin-bottom: 1rem;">
-                        <label>Granični prelaz</label>
-                        <select formControlName="borderCrossingId">
-                            <option *ngFor="let bc of borderCrossings" [value]="bc">{{ bc }}</option>
-                        </select>
-                    </div>
-
-                    <div class="section-actions" style="margin-top:2rem">
-                        <button type="button" class="btn-back" (click)="goTo(4)">
-                            <i class="ti ti-arrow-left" aria-hidden="true"></i> Nazad
-                        </button>
-                        <button type="submit" class="btn-submit" [disabled]="loading()">
-                            <span *ngIf="loading()" class="spinner" aria-hidden="true"></span>
-                            <i *ngIf="!loading()" class="ti ti-search" aria-hidden="true"></i>
-                            {{ loading() ? 'Provera u toku...' : 'Pokreni proveru' }}
-                        </button>
-                    </div>
-                </section>
-
-            </form>
-
-            <!-- ******************** ERROR ******************** -->
-            <div *ngIf="error()" class="error-bar" role="alert">
-                <i class="ti ti-alert-circle" aria-hidden="true"></i> {{ error() }}
+          <div class="field-grid">
+            <div class="field">
+              <label>Zemlja porekla robe</label>
+              <input formControlName="originCountry"
+                     placeholder="npr. MK" maxlength="3" />
             </div>
+            <div class="field">
+              <label>Zemlja odredišta</label>
+              <input formControlName="destinationCountry"
+                     placeholder="npr. BA" maxlength="3" />
+            </div>
+            <div class="field">
+              <label>Masa robe (kg)</label>
+              <input type="number" formControlName="goodsWeight"
+                     placeholder="npr. 26500" />
+            </div>
+            <div class="field" style="grid-column:1/-1">
+              <label>Opis robe</label>
+              <input formControlName="goodsDescription"
+                     placeholder="npr. adr opasne materije / livestock / frozen food" />
+            </div>
+            <div class="field">
+              <label>Pošiljalac</label>
+              <input formControlName="senderIdentity"
+                     placeholder="npr. Firma DOO" />
+            </div>
+            <div class="field">
+              <label>Primalac</label>
+              <input formControlName="receiverIdentity"
+                     placeholder="npr. Primalac AD" />
+            </div>
+          </div>
 
-            <!-- ******************** REZULTAT ******************** -->
-            <div *ngIf="result()" class="result-panel">
+          <div class="section-actions">
+            <button type="button" class="btn-back" (click)="goTo(2)">
+              <i class="ti ti-arrow-left" aria-hidden="true"></i> Nazad
+            </button>
+            <button type="button" class="btn-next" (click)="goTo(4)">
+              Dalje <i class="ti ti-arrow-right" aria-hidden="true"></i>
+            </button>
+          </div>
+        </section>
 
-                <!-- Header sa finalnom odlukom -->
-                <div class="result-head"
-                     [ngClass]="recClass(result()!.finalDecision?.recommendation ?? '')">
-                    <i class="ti result-icon"
-                       [class]="'ti ' + recIcon(result()!.finalDecision?.recommendation ?? '')"
-                       aria-hidden="true"></i>
-                    <div class="result-head-text">
-                        <div class="rec-label">
-                            {{ recLabel(result()!.finalDecision?.recommendation ?? '') }}
-                        </div>
-                        <div class="rec-fine"
-                             *ngIf="result()!.finalDecision && result()!.finalDecision!.totalFine > 0">
-                            Ukupna kazna:
-                            <strong>{{ result()!.finalDecision!.totalFine | number:'1.2-2' }} BAM</strong>
-                        </div>
-                    </div>
-                    <div class="rec-flags">
+        <!-- ******************** KORAK 4 - DOZVOLE ******************** -->
+        <section class="form-section" [class.visible]="activeSection() === 4">
+          <h2 class="section-title">Dozvole za prevoz</h2>
+
+          <div class="permits-list" formArrayName="transportPermits">
+            <div
+              *ngFor="let permit of permits.controls; let i = index"
+              [formGroupName]="i"
+              class="permit-card">
+              <div class="permit-header">
+                <span class="permit-num">Dozvola {{ i + 1 }}</span>
+                <button type="button" class="btn-rm"
+                        (click)="removePermit(i)" aria-label="Ukloni">
+                  <i class="ti ti-x" aria-hidden="true"></i>
+                </button>
+              </div>
+              <div class="field-grid">
+                <div class="field">
+                  <label>Tip dozvole</label>
+                  <select formControlName="type">
+                    <option value="CEMT">CEMT</option>
+                    <option value="BILATERAL">Bilateralna</option>
+                    <option value="TRANSIT">Tranzitna</option>
+                    <option value="THIRD_COUNTRY">Treće zemlje</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Datum isteka</label>
+                  <input type="date" formControlName="expiryDate" />
+                </div>
+                <div class="field" style="grid-column:1/-1">
+                  <label>Pokrivene rute (npr. RS-BA ili ALL)</label>
+                  <input formControlName="coveredRoutes"
+                         placeholder="npr. RS-BA" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="btn-add" (click)="addPermit()">
+            <i class="ti ti-plus" aria-hidden="true"></i> Dodaj dozvolu
+          </button>
+
+          <div class="section-actions" style="margin-top:2rem">
+            <button type="button" class="btn-back" (click)="goTo(3)">
+              <i class="ti ti-arrow-left" aria-hidden="true"></i> Nazad
+            </button>
+            <button type="button" class="btn-next" (click)="goTo(5)">
+              Dalje <i class="ti ti-arrow-right" aria-hidden="true"></i>
+            </button>
+          </div>
+        </section>
+
+        <!-- ******************** KORAK 5 - SERTIFIKATI ******************** -->
+        <section class="form-section" [class.visible]="activeSection() === 5">
+          <h2 class="section-title">Sertifikati vozača</h2>
+
+          <p class="section-hint" style="margin-bottom: 1rem">
+            Dodaj sertifikate samo ako vozač prevozi specijalnu robu
+            (ADR, veterinarski, ATP, itd). Ako vozač nema potreban
+            sertifikat za vrstu robe u CMR-u, sistem će registrovati kršenje.
+          </p>
+
+          <div class="permits-list" formArrayName="driverCertificates">
+            <div
+              *ngFor="let cert of certificates.controls; let i = index"
+              [formGroupName]="i"
+              class="permit-card">
+              <div class="permit-header">
+                <span class="permit-num">Sertifikat {{ i + 1 }}</span>
+                <button type="button" class="btn-rm"
+                        (click)="removeCertificate(i)" aria-label="Ukloni">
+                  <i class="ti ti-x" aria-hidden="true"></i>
+                </button>
+              </div>
+              <div class="field-grid">
+                <div class="field">
+                  <label>Tip sertifikata</label>
+                  <select formControlName="goodsCertificate">
+                    <option value="ADR_CERTIFICATE">ADR (opasne materije)</option>
+                    <option value="VETERINARY_CERTIFICATE">Veterinarski (žive životinje)</option>
+                    <option value="ATP_CERTIFICATE">ATP (rashladni transport)</option>
+                    <option value="EXPLOSIVES_CERTIFICATE">Eksplozivi</option>
+                    <option value="WASTE_TRANSPORT_CERTIFICATE">Otpad</option>
+                    <option value="RADIOACTIVE_CERTIFICATE">Radioaktivne materije</option>
+                    <option value="PHARMACEUTICAL_CERTIFICATE">Farmaceutski proizvodi</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Godine iskustva</label>
+                  <input type="number" formControlName="yearsExperience"
+                         placeholder="npr. 2" min="0" />
+                </div>
+                <div class="field">
+                  <label>Datum isteka sertifikata</label>
+                  <input type="date" formControlName="expiryDate" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="btn-add" (click)="addCertificate()">
+            <i class="ti ti-plus" aria-hidden="true"></i> Dodaj sertifikat
+          </button>
+
+          <div class="field" style="margin-top: 1.5rem; margin-bottom: 1rem;">
+            <label>Granični prelaz</label>
+            <select formControlName="borderCrossingId">
+              <option *ngFor="let bc of borderCrossings" [value]="bc">{{ bc }}</option>
+            </select>
+          </div>
+
+          <div class="section-actions" style="margin-top:2rem">
+            <button type="button" class="btn-back" (click)="goTo(4)">
+              <i class="ti ti-arrow-left" aria-hidden="true"></i> Nazad
+            </button>
+            <button type="submit" class="btn-submit" [disabled]="loading()">
+              <span *ngIf="loading()" class="spinner" aria-hidden="true"></span>
+              <i *ngIf="!loading()" class="ti ti-search" aria-hidden="true"></i>
+              {{ loading() ? 'Provera u toku...' : 'Pokreni proveru' }}
+            </button>
+          </div>
+        </section>
+
+      </form>
+
+      <!-- ******************** ERROR ******************** -->
+      <div *ngIf="error()" class="error-bar" role="alert">
+        <i class="ti ti-alert-circle" aria-hidden="true"></i> {{ error() }}
+      </div>
+
+      <!-- ******************** REZULTAT ******************** -->
+      <div *ngIf="result()" class="result-panel">
+
+        <!-- Header sa finalnom odlukom -->
+        <div class="result-head"
+             [ngClass]="recClass(result()!.finalDecision?.recommendation ?? '')">
+          <i class="ti result-icon"
+             [class]="'ti ' + recIcon(result()!.finalDecision?.recommendation ?? '')"
+             aria-hidden="true"></i>
+          <div class="result-head-text">
+            <div class="rec-label">
+              {{ recLabel(result()!.finalDecision?.recommendation ?? '') }}
+            </div>
+            <div class="rec-fine"
+                 *ngIf="result()!.finalDecision && result()!.finalDecision!.totalFine > 0">
+              Ukupna kazna:
+              <strong>{{ result()!.finalDecision!.totalFine | number:'1.2-2' }} BAM</strong>
+            </div>
+          </div>
+          <div class="rec-flags">
             <span *ngIf="result()!.finalDecision?.requiresDriverReplacement"
                   class="flag">
               <i class="ti ti-user-off" aria-hidden="true"></i> Zamena vozača
             </span>
-                        <span *ngIf="result()!.finalDecision?.requiresCargoOffLoad"
-                              class="flag">
+            <span *ngIf="result()!.finalDecision?.requiresCargoOffLoad"
+                  class="flag">
               <i class="ti ti-package" aria-hidden="true"></i> Istovar viška
             </span>
-                    </div>
-                </div>
+          </div>
+        </div>
 
-                <!-- Validity cipovi -->
-                <div class="validity-row">
+        <!-- Validity cipovi -->
+        <div class="validity-row">
           <span class="vchip"
                 [ngClass]="validityClass(result()!.driverValidity?.status ?? '')">
             <i class="ti ti-user" aria-hidden="true"></i>
             Vozač: {{ result()!.driverValidity?.status ?? '-' }}
           </span>
-                    <span class="vchip"
-                          [ngClass]="validityClass(result()!.vehicleValidity?.status ?? '')">
+          <span class="vchip"
+                [ngClass]="validityClass(result()!.vehicleValidity?.status ?? '')">
             <i class="ti ti-truck" aria-hidden="true"></i>
             Vozilo: {{ result()!.vehicleValidity?.status ?? '-' }}
           </span>
-                    <span class="vchip"
-                          [ngClass]="validityClass(result()!.permitStatus?.status ?? '')">
+          <span class="vchip"
+                [ngClass]="validityClass(result()!.permitStatus?.status ?? '')">
             <i class="ti ti-file-certificate" aria-hidden="true"></i>
             Dozvola: {{ result()!.permitStatus?.status ?? '-' }}
           </span>
-                    <span class="vchip"
-                          [ngClass]="hasCertificateViolation() ? 'chip-forbidden' : 'chip-valid'">
+          <span class="vchip"
+                [ngClass]="hasCertificateViolation() ? 'chip-forbidden' : 'chip-valid'">
             <i class="ti ti-certificate" aria-hidden="true"></i>
             Sertifikati: {{ getCertificateChipLabel() }}
           </span>
-                </div>
+        </div>
 
-                <!-- CEP alarmi za ovo vozilo -->
-                <div *ngIf="vehicleAlarms().length" class="cep-inline">
-                    <div class="cep-inline-title">
-                        <i class="ti ti-bell" aria-hidden="true"></i>
-                        CEP alarmi za ovo vozilo ({{ vehicleAlarms().length }})
-                    </div>
-                    <div *ngFor="let a of vehicleAlarms()"
-                         class="alarm-pill" [ngClass]="alarmClass(a.type)">
-                        <strong>{{ a.type }}</strong> - {{ a.message }}
-                    </div>
-                </div>
 
-                <!-- Lista kršenja -->
-                <div *ngIf="result()!.violations?.length" class="violations">
-                    <div class="violations-title">
-                        Utvrđena kršenja ({{ result()!.violations.length }})
-                    </div>
-                    <div
-                            *ngFor="let v of result()!.violations"
-                            class="violation-card"
-                            [class.blocking]="!v.canContinue">
-                        <div class="v-top">
-                            <span class="v-type">{{ v.type }}</span>
-                            <span class="v-fine" *ngIf="v.fineAmount > 0">
+        <!-- Procena rizika -->
+        <div *ngIf="result()?.riskAssessment" class="risk-panel" [ngClass]="getRiskClass()">
+
+          <div class="risk-header">
+            <i class="ti" [ngClass]="getRiskIcon()" style="font-size:20px; margin-top:2px; flex-shrink:0;" aria-hidden="true"></i>
+            <div class="risk-title-block">
+              <span class="risk-label-small">Procena rizika</span>
+              <span class="risk-level">{{ getRiskLabel() }}</span>
+            </div>
+
+            <div class="risk-bar-wrap">
+              <div class="risk-bar">
+                <div class="risk-bar-fill"
+                     [style.width.%]="(result()!.riskAssessment!.riskScore / 125) * 100">
+                </div>
+              </div>
+              <span class="risk-score-caption">
+                      {{ result()!.riskAssessment!.riskScore }} / 125
+                    </span>
+            </div>
+          </div>
+
+          <div  class="risk-tree-toggle-row">
+            <button class="btn-tree-link" (click)="toggleTree()">
+              {{ showExplanationTree() ? 'Sakrij obrazloženje' : 'Vidi obrazloženje' }}
+            </button>
+          </div>
+
+          <div *ngIf="showExplanationTree() "
+               class="risk-chain">
+            <app-decision-tree [root]="result()!.riskAssessment!.explanationTree"></app-decision-tree>
+          </div>
+
+        </div>
+
+        <!-- CEP alarmi za ovo vozilo -->
+        <div *ngIf="vehicleAlarms().length" class="cep-inline">
+          <div class="cep-inline-title">
+            <i class="ti ti-bell" aria-hidden="true"></i>
+            CEP alarmi za ovo vozilo ({{ vehicleAlarms().length }})
+          </div>
+          <div *ngFor="let a of vehicleAlarms()"
+               class="alarm-pill" [ngClass]="alarmClass(a.type)">
+            <strong>{{ a.type }}</strong> - {{ a.message }}
+          </div>
+        </div>
+
+        <div *ngIf="regularViolations().length" class="violations">
+          <div class="violations-title">
+            Utvrđena kršenja ({{ regularViolations().length }})
+          </div>
+          <div
+            *ngFor="let v of regularViolations()"
+            class="violation-card"
+            [class.blocking]="!v.canContinue">
+            <div class="v-top">
+              <span class="v-type">{{ v.type }}</span>
+              <span class="v-fine" *ngIf="v.fineAmount > 0">
                 {{ v.fineAmount | number:'1.2-2' }} BAM
               </span>
-                            <span class="v-tag"
-                                  [class.stop]="!v.canContinue"
-                                  [class.go]="v.canContinue">
+              <span class="v-tag"
+                    [class.stop]="!v.canContinue"
+                    [class.go]="v.canContinue">
                 {{ v.canContinue ? 'Može nastaviti' : 'Zabrana nastavka' }}
               </span>
-                        </div>
-                        <div class="v-basis">{{ v.legalBasis }}</div>
-                        <div class="v-exp">{{ v.explanation }}</div>
-                    </div>
-                </div>
-
-                <!-- Nema kršenja -->
-                <div *ngIf="!result()!.violations?.length" class="no-violations">
-                    <i class="ti ti-circle-check" aria-hidden="true"></i>
-                    Nema utvrđenih kršenja.
-                </div>
-
-                <!-- Potvrda o odbijanju -->
-                <div *ngIf="result()!.finalDecision?.entryRefusalCertificate"
-                     class="cert-box">
-                    <div class="cert-title">
-                        <i class="ti ti-file-description" aria-hidden="true"></i>
-                        Potvrda o odbijanju prelaska
-                    </div>
-                    <p class="cert-text">
-                        {{ result()!.finalDecision!.entryRefusalCertificate }}
-                    </p>
-                </div>
-
-                <!-- Footer -->
-                <div class="result-footer">
-                    <button type="button" class="btn-back" (click)="reset()">
-                        <i class="ti ti-refresh" aria-hidden="true"></i> Nova provera
-                    </button>
-                </div>
-
             </div>
+            <div class="v-basis">{{ v.legalBasis }}</div>
+            <div class="v-exp">{{ v.explanation }}</div>
+          </div>
         </div>
-    </main>
+
+        <!-- Nema kršenja -->
+        <div *ngIf="!regularViolations().length" class="no-violations">
+          <i class="ti ti-circle-check" aria-hidden="true"></i>
+          Nema utvrđenih kršenja.
+        </div>
+
+        <!-- Footer -->
+        <div class="result-footer">
+          <button
+            type="button"
+            class="btn-pdf"
+            (click)="downloadReport()">
+            <i class="ti ti-file-download" aria-hidden="true"></i>
+            Preuzmi potvrdu
+          </button>
+          <button type="button" class="btn-back" (click)="reset()">
+            <i class="ti ti-refresh" aria-hidden="true"></i> Nova provera
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </main>
 </div>

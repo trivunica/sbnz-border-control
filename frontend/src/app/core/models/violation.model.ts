@@ -33,7 +33,10 @@ export type ViolationType =
     | 'MISSING_EXPLOSIVES_CERTIFICATE'
     | 'BILATERAL_THIRD_COUNTRY_VIOLATION'
     | 'BILATERAL_WEIGHT_EXCEEDED'
-    | 'INSUFFICIENT_DRIVING_EXPERIENCE';
+    | 'INSUFFICIENT_DRIVING_EXPERIENCE'
+    | 'HIGH_RISK_ENTITY'
+    | 'MEDIUM_RISK_ENTITY';
+
 
 export type ActionRecommendation =
     | 'ALLOW'
@@ -63,6 +66,23 @@ export interface FinalDecision {
     entryRefusalCertificate: string | null;
 }
 
+export interface RiskAssessment {
+    riskScore: number;
+    riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+    riskFactors: string[];
+    explanationTree: DecisionNode;
+    entityId: string;
+}
+
+export interface DecisionNode {
+    nodeId: string;
+    type: 'DECISION' | 'ENTITY' | 'RISK_FACTOR' | 'EVIDENCE';
+    label: string;
+    detail?: string;
+    score: number;
+    children: DecisionNode[];
+}
+
 export interface BorderCrossingRequest {
     driver: Driver;
     drivingLicence: DrivingLicence;
@@ -81,6 +101,5 @@ export interface BorderCrossingResult {
     permitStatus: PermitStatus | null;
     violations: Violation[];
     finalDecision: FinalDecision | null;
+    riskAssessment: RiskAssessment | null;
 }
-
-
