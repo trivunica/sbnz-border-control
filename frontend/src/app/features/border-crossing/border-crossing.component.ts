@@ -8,14 +8,22 @@ import {
     BorderCrossingResult,
     MrzResult,
     CepAlarm,
-    DriverCertificate, CrossingEvent,
+    DriverCertificate, CrossingEvent, Violation, WarrantCheckResult
 } from '../../core/models';
 import { MrzScannerComponent } from '../mrz-scanner/mrz-scanner.component';
+import { PdfReportService } from '../../core/services/pdf-report.service';
+import { DecisionTreeComponent } from '../decision-tree/decision-tree.component';
 
 @Component({
     selector: 'app-border-crossing',
     standalone: true,
-    imports: [CommonModule, ReactiveFormsModule, RouterLink, MrzScannerComponent],
+    imports: [
+        CommonModule,
+        ReactiveFormsModule,
+        RouterLink,
+        MrzScannerComponent,
+        DecisionTreeComponent,
+    ],
     templateUrl: './border-crossing.component.html',
     styleUrls: ['./border-crossing.component.scss'],
 })
@@ -27,10 +35,12 @@ export class BorderCrossingComponent implements OnInit {
     error = signal<string | null>(null);
     activeSection = signal(0);
     showMrzScanner = signal(false);
+    warrantResult = signal<WarrantCheckResult | null>(null);
+    warrantLoading = signal(false);
+    showArrestModal = signal(false);
+    showStolenModal  = signal(false);
 
-    readonly borderCrossings = [
-        'RACA', 'POPOVI', 'SEPAK', 'BRATUNAC', 'KARAKAJ', 'SKELANI'
-    ];
+    readonly borderCrossings = ['RACA', 'POPOVI', 'SEPAK', 'BRATUNAC', 'KARAKAJ', 'SKELANI'];
 
     readonly sections = [
         { label: 'Vozač' },
@@ -41,7 +51,14 @@ export class BorderCrossingComponent implements OnInit {
         { label: 'Sertifikati' },
     ];
 
-    constructor(private fb: FormBuilder, private service: BorderCrossingService) {}
+    showExplanationTree = signal(false);
+    toggleTree() { this.showExplanationTree.update(v => !v); }
+
+    constructor(
+        private fb: FormBuilder,
+        private pdfService: PdfReportService,
+        private service: BorderCrossingService,
+    ) {}
 
     ngOnInit(): void {
         this.form = this.fb.group({
@@ -50,10 +67,7 @@ export class BorderCrossingComponent implements OnInit {
                 surname: ['', Validators.required],
                 citizenship: ['', Validators.required],
                 foreignCitizen: [false],
-                interpolWarrant: [false],
-                domesticWarrant: [false],
                 photoMatches: [true],
-                documentReportedStolen: [false],
                 hasVisa: [false],
                 hasSupplementaryDocument: [false],
                 financialFunds: [null],
@@ -93,42 +107,39 @@ export class BorderCrossingComponent implements OnInit {
                 visualSag: [false],
             }),
             borderCrossingId: ['RACA', Validators.required],
+            pastViolations: this.fb.array([]),
+            companyDriverLicences: this.fb.array([]),
+            otherVehiclePlates: this.fb.array([]),
         });
     }
 
-    get permits(): FormArray {
-        return this.form.get('transportPermits') as FormArray;
-    }
-
-    get certificates(): FormArray {
-        return this.form.get('driverCertificates') as FormArray;
-    }
-
     addPermit(): void {
-        this.permits.push(this.fb.group({
-            type: ['CEMT', Validators.required],
-            expiryDate: ['', Validators.required],
-            coveredRoutes: ['ALL'],
-        }));
+        this.permits.push(
+            this.fb.group({
+                type: ['CEMT', Validators.required],
+                expiryDate: ['', Validators.required],
+                coveredRoutes: ['ALL'],
+            }),
+        );
     }
 
     removePermit(i: number): void {
         this.permits.removeAt(i);
     }
 
-
     addCertificate(): void {
-        this.certificates.push(this.fb.group({
-            goodsCertificate: ['ADR_CERTIFICATE', Validators.required],
-            yearsExperience: [0, [Validators.required, Validators.min(0)]],
-            expiryDate: ['', Validators.required],
-        }));
+        this.certificates.push(
+            this.fb.group({
+                goodsCertificate: ['ADR_CERTIFICATE', Validators.required],
+                yearsExperience: [0, [Validators.required, Validators.min(0)]],
+                expiryDate: ['', Validators.required],
+            }),
+        );
     }
 
     removeCertificate(i: number): void {
         this.certificates.removeAt(i);
     }
-
 
     goTo(i: number): void {
         this.activeSection.set(i);
@@ -159,6 +170,7 @@ export class BorderCrossingComponent implements OnInit {
         this.error.set(null);
         this.result.set(null);
         this.vehicleAlarms.set([]);
+        this.showExplanationTree.set(false);
 
         const v = this.form.value;
 
@@ -188,7 +200,6 @@ export class BorderCrossingComponent implements OnInit {
             request.liveWeightMeasurement = v.liveWeightMeasurement;
         }
 
-
         this.service.evaluate(request).subscribe({
             next: (res) => {
                 this.result.set(res);
@@ -205,14 +216,15 @@ export class BorderCrossingComponent implements OnInit {
                         companyName: v.cmrDocument?.senderIdentity ?? '',
                         destinationCountry: v.cmrDocument?.destinationCountry ?? '',
                         crossedAt: new Date().toISOString(),
-                        timestamp: Date.now()
+                        timestamp: Date.now(),
                     };
                     this.service.registerCrossing(event).subscribe({
-                        next: () => this.service.getAlarmsForVehicle(plate).subscribe({
-                            next: alarms => this.vehicleAlarms.set(alarms),
-                            error: () => {},
-                        }),
-                        error: () => {}
+                        next: () =>
+                            this.service.getAlarmsForVehicle(plate).subscribe({
+                                next: (alarms) => this.vehicleAlarms.set(alarms),
+                                error: () => {},
+                            }),
+                        error: () => {},
                     });
                 }
             },
@@ -225,9 +237,12 @@ export class BorderCrossingComponent implements OnInit {
 
     reset(): void {
         this.form.reset({
-            driver: { photoMatches: true, foreignCitizen: false, interpolWarrant: false,
-                domesticWarrant: false, documentReportedStolen: false,
-                hasVisa: false, hasSupplementaryDocument: false },
+            driver: {
+                photoMatches: true,
+                foreignCitizen: false,
+                hasVisa: false,
+                hasSupplementaryDocument: false,
+            },
             drivingLicence: { category: 'CE' },
             identificationDocument: { type: 'PASSPORT' },
             includeLiveWeight: false,
@@ -237,10 +252,12 @@ export class BorderCrossingComponent implements OnInit {
         this.result.set(null);
         this.vehicleAlarms.set([]);
         this.error.set(null);
+        this.warrantResult.set(null);
+        this.showArrestModal.set(false);
+        this.showStolenModal.set(false);
         this.activeSection.set(0);
         this.showMrzScanner.set(false);
     }
-
 
     recClass(rec: string): string {
         const map: Record<string, string> = {
@@ -297,19 +314,122 @@ export class BorderCrossingComponent implements OnInit {
     }
 
     hasCertificateViolation(): boolean {
-        return this.result()?.violations?.some(v =>
-            v.type?.includes('CERTIFICATE') || v.type === 'INSUFFICIENT_DRIVING_EXPERIENCE'
-        ) ?? false;
+        return (
+            this.result()?.violations?.some(
+                (v) => v.type?.includes('CERTIFICATE') || v.type === 'INSUFFICIENT_DRIVING_EXPERIENCE',
+            ) ?? false
+        );
     }
 
     getCertificateChipLabel(): string {
         const violations = this.result()?.violations ?? [];
-        if (violations.some(v => v.type === 'INSUFFICIENT_DRIVING_EXPERIENCE')) {
+        if (violations.some((v) => v.type === 'INSUFFICIENT_DRIVING_EXPERIENCE')) {
             return 'NEDOVOLJNO ISKUSTVO';
         }
-        if (violations.some(v => v.type?.includes('CERTIFICATE'))) {
+        if (violations.some((v) => v.type?.includes('CERTIFICATE'))) {
             return 'NEDOSTAJE';
         }
         return 'OK';
     }
+
+    downloadReport(): void {
+        const res = this.result();
+        if (!res) return;
+        this.pdfService.generateReport(res, this.buildRequest());
+    }
+
+    goNextFromDocuments(): void {
+        const docNum = this.form.get('identificationDocument.documentNumber')?.value?.trim();
+        if (!docNum) {
+            this.goTo(2);
+            return;
+        }
+
+        this.warrantLoading.set(true);
+        this.warrantResult.set(null);
+
+        this.service.checkWarrant(docNum).subscribe({
+            next: (res) => {
+                this.warrantLoading.set(false);
+                this.warrantResult.set(res);
+
+                if (res.interpolWarrant || res.domesticWarrant) {
+                    this.showArrestModal.set(true);
+                } else if (res.documentReportedStolen) {
+                    this.showStolenModal.set(true);
+                } else {
+                    this.goTo(2);
+                }
+            },
+            error: () => {
+                this.warrantLoading.set(false);
+                this.error.set('Upozorenje: provera potraga nije uspela. Nastavite pažljivo.');
+                this.goTo(2);
+            },
+        });
+    }
+
+    closeStolenModal(): void {
+        this.showStolenModal.set(false);
+        this.goTo(2);
+    }
+
+    confirmArrestAndReset(): void {
+        this.showArrestModal.set(false);
+        this.reset();
+    }
+
+
+    getRiskClass(): string {
+        const level = this.result()?.riskAssessment?.riskLevel;
+        if (level === 'HIGH') return 'risk-high';
+        if (level === 'MEDIUM') return 'risk-medium';
+        return 'risk-low';
+    }
+
+    getRiskIcon(): string {
+        const level = this.result()?.riskAssessment?.riskLevel;
+        if (level === 'HIGH') return 'ti-alert-octagon';
+        if (level === 'MEDIUM') return 'ti-alert-triangle';
+        return 'ti-shield-check';
+    }
+
+    getRiskLabel(): string {
+        const ra = this.result()?.riskAssessment;
+        if (!ra) return '';
+        const labels: Record<string, string> = {
+            HIGH: 'VISOK RIZIK',
+            MEDIUM: 'Srednji rizik',
+            LOW: 'Nizak rizik',
+        };
+        return `${labels[ra.riskLevel] ?? ra.riskLevel}  (${ra.riskScore} / 125 kaznenih bodova)`;
+    }
+
+    regularViolations(): Violation[] {
+        return (this.result()?.violations ?? []).filter(
+            (v) => v.type !== 'HIGH_RISK_ENTITY' && v.type !== 'MEDIUM_RISK_ENTITY',
+        );
+    }
+
+    get permits(): FormArray {
+        return this.form.get('transportPermits') as FormArray;
+    }
+
+    get certificates(): FormArray {
+        return this.form.get('driverCertificates') as FormArray;
+    }
+
+    private buildRequest(): BorderCrossingRequest {
+        const v = this.form.value;
+        const request: BorderCrossingRequest = {
+            driver: v.driver,
+            drivingLicence: v.drivingLicence,
+            identificationDocument: v.identificationDocument,
+        };
+        if (v.vehicleRegistration?.registrationNumber)
+            request.vehicleRegistration = v.vehicleRegistration;
+        if (v.cmrDocument?.originCountry) request.cmrDocument = v.cmrDocument;
+        return request;
+    }
+
 }

@@ -506,3 +506,413 @@
   display: flex;
   justify-content: flex-end;
 }
+
+.risk-panel {
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 0.75rem 0;
+  border: 1.5px solid transparent;
+  transition: all 0.2s;
+}
+.risk-panel.risk-low    { background: rgba(22,163,74,.07);  border-color: #16a34a; }
+.risk-panel.risk-medium { background: rgba(202,138,4,.08);  border-color: #ca8a04; }
+.risk-panel.risk-high   { background: rgba(220,38,38,.08);  border-color: #dc2626; }
+
+.risk-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+.risk-title-block { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.risk-label-small { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; opacity: .6; }
+.risk-level       { font-size: 14px; font-weight: 700; }
+
+.risk-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  min-width: 120px;
+}
+
+.risk-tree-toggle-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 2px;
+  margin-bottom: 0.4rem;
+}
+
+.risk-score-caption { font-size: 10px; opacity: .6; white-space: nowrap; }
+
+.btn-tree-link {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.55;
+  letter-spacing: 0.03em;
+  color: inherit;
+  text-transform: uppercase;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+
+  &:hover { opacity: 1; }
+}
+
+.risk-bar { width: 100px; height: 6px; background: rgba(0,0,0,.12); border-radius: 3px; overflow: hidden; }
+.risk-bar-fill { height: 100%; border-radius: 3px; background: currentColor; transition: width .5s ease; }
+
+.risk-factors { list-style: none; margin-bottom: 0.6rem; padding-left: 0; }
+.risk-factors li {
+  font-size: 12px;
+  padding: 2px 0;
+  opacity: .85;
+  display: flex;
+  gap: 0.4rem;
+}
+.risk-factors li::before { content: "•"; opacity: .5; }
+
+.risk-chain { background: rgba(0,0,0,.05); border-radius: 5px; padding: 0.5rem 0.75rem; }
+.risk-chain-label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; opacity: .55; margin-bottom: 3px; }
+.risk-chain code  { font-size: 11px; word-break: break-all; opacity: .8; }
+
+.result-footer {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255,255,255,.08);
+}
+.btn-pdf {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1.1rem;
+  background: #1d4ed8;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-pdf:hover { background: #1e40af; }
+
+.bc-tree {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.bc-node {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: monospace;
+  border: 1px solid rgba(255,255,255,0.15);
+
+  .bc-node-icon { font-size: 14px; }
+  .bc-node-label { word-break: break-all; }
+
+  &.bc-node-violation { background: rgba(220, 38, 38, 0.18); border-color: #dc2626; color: #fca5a5; }
+  &.bc-node-cep       { background: rgba(234, 179, 8, 0.18);  border-color: #ca8a04; color: #fde68a; }
+  &.bc-node-colleague { background: rgba(139, 92, 246, 0.18); border-color: #7c3aed; color: #c4b5fd; }
+  &.bc-node-company   { background: rgba(59, 130, 246, 0.18); border-color: #2563eb; color: #93c5fd; }
+  &.bc-node-default   { background: rgba(255,255,255,0.08);   color: #e2e8f0; }
+}
+
+.bc-arrow {
+  padding-left: 16px;
+  font-size: 16px;
+  color: rgba(255,255,255,0.4);
+  line-height: 1;
+}
+
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.warrant-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #fff8e1;
+  border: 1px solid #f9a825;
+  border-radius: 8px;
+  color: #6d4c00;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+
+  i { color: #f9a825; font-size: 1.2rem; }
+}
+
+.arrest-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.arrest-modal {
+  background: #fff;
+  border-radius: 12px;
+  width: min(560px, 95vw);
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.arrest-modal-header {
+  background: #c62828;
+  color: #fff;
+  padding: 1.5rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+
+  h2 { margin: 0; font-size: 1.4rem; letter-spacing: 0.05em; }
+}
+
+.arrest-icon {
+  font-size: 2.5rem;
+}
+
+.arrest-modal-body {
+  padding: 1.5rem 2rem;
+}
+
+.warrant-block {
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+
+  &.interpol {
+    background: #fce4ec;
+    border-left: 4px solid #c62828;
+  }
+  &.domestic {
+    background: #fff3e0;
+    border-left: 4px solid #e65100;
+  }
+}
+
+.warrant-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.5rem;
+}
+
+.warrant-doc  { font-size: 0.9rem; margin: 0.25rem 0; }
+.warrant-reason { font-size: 0.9rem; color: #444; margin: 0.25rem 0; }
+
+.arrest-instruction {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: #f5f5f5;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  color: #333;
+  line-height: 1.5;
+}
+
+.arrest-modal-footer {
+  padding: 1rem 2rem 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-arrest-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #c62828;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover { background: #b71c1c; }
+}
+
+
+.warrant-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 18, 35, 0.82);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.warrant-modal {
+  width: min(520px, 94vw);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow:
+          0 0 0 1px rgba(255,255,255,0.06),
+          0 24px 64px rgba(0,0,0,0.55);
+}
+
+.warrant-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1.25rem 1.5rem;
+
+  h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: #fff;
+  }
+}
+
+.warrant-modal-icon {
+  font-size: 1.75rem;
+  flex-shrink: 0;
+}
+
+.warrant-modal--arrest {
+  background: #1a0a0a;
+
+  .warrant-modal-header {
+    background: #7a1f1f;
+    border-bottom: 1px solid #5c1616;
+
+    .warrant-modal-icon { color: #fca5a5; }
+  }
+}
+
+.warrant-modal--stolen {
+  background: #1a1300;
+
+  .warrant-modal-header {
+    background: #7a5000;
+    border-bottom: 1px solid #5c3c00;
+
+    .warrant-modal-icon { color: #fde68a; }
+  }
+}
+
+.warrant-modal-body {
+  padding: 1.25rem 1.5rem;
+}
+
+.warrant-block {
+  border-radius: 6px;
+  padding: 0.875rem 1rem;
+  margin-bottom: 0.875rem;
+
+  &--interpol {
+    background: rgba(220, 38, 38, 0.18);
+    border: 1px solid #dc2626;
+
+    .warrant-badge { color: #fca5a5; }
+    .warrant-doc, .warrant-reason { color: #fca5a5; }
+  }
+
+  &--domestic {
+    background: rgba(122, 31, 31, 0.25);
+    border: 1px solid #7a1f1f;
+
+    .warrant-badge { color: #f8a0a0; }
+    .warrant-doc, .warrant-reason { color: #f8a0a0; }
+  }
+
+  &--stolen {
+    background: rgba(234, 179, 8, 0.18);
+    border: 1px solid #ca8a04;
+
+    .warrant-badge { color: #fde68a; }
+    .warrant-doc { color: #fde68a; }
+  }
+}
+
+.warrant-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.warrant-doc    { font-size: 0.88rem; margin: 0.2rem 0; }
+.warrant-reason { font-size: 0.85rem; margin: 0.25rem 0; opacity: 0.85; }
+
+.warrant-instruction {
+  margin-top: 0.875rem;
+  padding: 0.75rem 0.875rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: rgba(255,255,255,0.75);
+  line-height: 1.6;
+
+  strong { color: #fff; }
+}
+
+.warrant-modal-footer {
+  padding: 1rem 1.5rem 1.25rem;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+
+.warrant-modal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s;
+
+  &:hover { filter: brightness(1.12); }
+
+  &--arrest {
+    background: #7a1f1f;
+    color: #fff;
+    border: 1px solid #a02828;
+  }
+
+  &--stolen {
+    background: #e8a020;
+    color: #1a1300;
+    border: 1px solid #c8881a;
+  }
+}

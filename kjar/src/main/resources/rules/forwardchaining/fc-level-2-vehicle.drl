@@ -20,7 +20,7 @@ rule "Expired vehicle registration"
         $vr: VehicleRegistration(expiryDate != null, expiryDate.isBefore(LocalDate.now()))
         not Violation(type == ViolationType.EXPIRED_REGISTRATION)
     then
-        insert(new Violation(ViolationType.EXPIRED_REGISTRATION, "Čl. XXX", 300.0, false,
+        insert(new Violation(ViolationType.EXPIRED_REGISTRATION, "Čl. 33 zakona o graničnoj kontroli BiH", 300.0, false,
                              "Istekla saobracajna dozvola. Vozilo se vraca. Vozac sa validnim licnim dokumentima moze peske preci granicu."));
 end
 
@@ -32,7 +32,7 @@ rule "Visual saf of the trailer - scale required"
         LiveWeightMeasurement(visualSag == true, measuredTotalWeight == null)
         not Violation(type == ViolationType.PENDING_WEIGHT_CHECK)
     then
-        insert(new Violation(ViolationType.PENDING_WEIGHT_CHECK, "Čl. XXX", 0.0, false,
+        insert(new Violation(ViolationType.PENDING_WEIGHT_CHECK, "Čl. 33 zakona o graničnoj kontroli BiH", 0.0, false,
                               "Primeceno vizuelno ulegnuce prikolice. Vozilo se odvodi na vagu radi provere pretovara."));
 end
 
@@ -48,7 +48,7 @@ rule "Trailer overload - domestic driver"
         not Violation(type == ViolationType.TRAILER_OVERLOAD)
     then
         double excess = $goodsWeight - $trailerCapacity;
-        insert(new Violation(ViolationType.TRAILER_OVERLOAD, "Čl. XXX", 500.0, true,
+        insert(new Violation(ViolationType.TRAILER_OVERLOAD, "Čl. 33 zakona o graničnoj kontroli BiH", 500.0, true,
                              "Pretovar prikolice. Masa robe: " + $goodsWeight + " kg, dozvoljena nosivost: " + $trailerCapacity +
                              " kg, visak: " + excess + " kg. Potreban istovar ili preraspodela tereta."));
 end
@@ -65,7 +65,7 @@ rule "Trailer overload - foreign driver"
         not Violation(type == ViolationType.TRAILER_OVERLOAD)
     then
         double excess = $goodsWeight - $trailerCapacity;
-        insert(new Violation(ViolationType.TRAILER_OVERLOAD, "Čl. XXX", 1000.0, true,
+        insert(new Violation(ViolationType.TRAILER_OVERLOAD, "Čl. 33 zakona o graničnoj kontroli BiH", 1000.0, true,
                              "Pretovar prikolice. Masa robe: " + $goodsWeight + " kg, dozvoljena nosivost: " + $trailerCapacity +
                              " kg, visak: " + excess + " kg. Potreban istovar ili preraspodela tereta. Kazna duplirana za stranog vozaca."));
 end
@@ -83,7 +83,7 @@ rule "Total weight overload - domestic driver"
     then
         double totalWeight = $goodsWeight + $truckWeight;
         double excess = totalWeight - 40000;
-        insert(new Violation(ViolationType.TOTAL_WEIGHT_OVERLOAD, "Čl. XXX", 500.0, true,
+        insert(new Violation(ViolationType.TOTAL_WEIGHT_OVERLOAD, "Čl. 33 zakona o graničnoj kontroli BiH", 500.0, true,
                              "Pretovar ukupne mase vozila. Ukupna masa: " + totalWeight + " kg, zakonski limit: 40 000 kg, visak: " + excess + " kg."));
 end
 
@@ -100,7 +100,7 @@ rule "Total weight overload - foreign driver"
     then
         double totalWeight = $goodsWeight + $truckWeight;
         double excess = totalWeight - 40000;
-        insert(new Violation(ViolationType.TOTAL_WEIGHT_OVERLOAD, "Čl. XXX", 1000.0, true,
+        insert(new Violation(ViolationType.TOTAL_WEIGHT_OVERLOAD, "Čl. 33 zakona o graničnoj kontroli BiH", 1000.0, true,
                              "Pretovar ukupne mase vozila. Ukupna masa: " + totalWeight + " kg, zakonski limit: 40 000 kg, visak: " + excess + " kg. Kazna duplirana za stranog vozaca."));
 end
 

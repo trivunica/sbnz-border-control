@@ -47,9 +47,6 @@
                        placeholder="Filtriraj po tablicama..."
                        [value]="filterPlate()"
                        (input)="filterPlate.set($any($event.target).value)" />
-                <button class="btn-refresh" (click)="loadAlarms()" type="button" aria-label="Osveži">
-                    <i class="ti ti-refresh" aria-hidden="true"></i>
-                </button>
             </div>
         </div>
 

@@ -68,14 +68,29 @@ rule "CEP - border avoidance"
             plateNumber == $plate,
             borderCrossingId != $border1,
             this != $e1,
-            timestamp >= ($ts1 - 86400000),   // 24h
-            timestamp <= ($ts1 + 86400000)
+            timestamp < $ts1,
+            timestamp >= ($ts1 - 86400000)
         )
-        not CepAlarm(plateNumber == $plate,
-                     type == CepAlarmType.BORDER_AVOIDANCE)
+        not CrossingEvent(
+            plateNumber == $plate,
+            this != $e1,
+            this != $e2,
+            timestamp > $e2.getTimestamp(),
+            timestamp < $ts1
+        )
+        $pair : String() from (
+            $border1.compareTo($e2.getBorderCrossingId()) <= 0
+                ? $border1 + "|" + $e2.getBorderCrossingId()
+                : $e2.getBorderCrossingId() + "|" + $border1
+        )
+        not CepAlarm(
+            plateNumber == $plate,
+            type == CepAlarmType.BORDER_AVOIDANCE,
+            borderPair == $pair
+        )
     then
         insert(new CepAlarm(CepAlarmType.BORDER_AVOIDANCE, $plate,
             "Vozilo " + $plate + " koristi razlicite prelaze: "
             + $border1 + " i " + $e2.getBorderCrossingId(),
-            $ts1));
+            $ts1, $pair));
 end

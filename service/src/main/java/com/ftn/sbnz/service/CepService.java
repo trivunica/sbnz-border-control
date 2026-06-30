@@ -46,6 +46,8 @@ public class CepService {
     public synchronized void registerCrossing(CrossingEvent event) {
         eventRepository.save(toCrossingEntity(event));
 
+        retractExpiredAlarms();
+
         cepSession.insert(event);
         List<CepAlarm> pre = getActiveAlarms();
         cepSession.fireAllRules();
@@ -54,6 +56,24 @@ public class CepService {
                 .filter(a -> pre.stream().noneMatch(p -> p.getType().equals(a.getType())
                         && p.getPlateNumber().equals(a.getPlateNumber())))
                 .forEach(a -> cepAlarmRepository.save(toAlarmEntity(a)));
+    }
+
+
+    private void retractExpiredAlarms() {
+        long now = System.currentTimeMillis();
+
+        cepSession.getObjects(obj -> obj instanceof CepAlarm)
+                .forEach(obj -> {
+                    CepAlarm a = (CepAlarm) obj;
+                    long windowMs = switch (a.getType()) {
+                        case FREQUENT_CROSSINGS -> 6  * 60 * 60 * 1000L;
+                        case COORDINATED_GROUP  -> 30 * 60 * 1000L;
+                        case BORDER_AVOIDANCE   -> 24 * 60 * 60 * 1000L;
+                    };
+                    if (now - a.getTimestamp() > windowMs) {
+                        cepSession.delete(cepSession.getFactHandle(obj));
+                    }
+                });
     }
 
 
@@ -87,11 +107,34 @@ public class CepService {
 
 
     public synchronized List<CepAlarm> getAlarmsForVehicle(String plateNumber) {
+        long now = System.currentTimeMillis();
+        List<CepAlarm> alarms = new ArrayList<>();
+
+        cepSession.getObjects(obj -> obj instanceof CepAlarm
+                        && ((CepAlarm) obj).getPlateNumber().equals(plateNumber))
+                .forEach(obj -> {
+                    CepAlarm a = (CepAlarm) obj;
+
+                    long windowMs = switch (a.getType()) {
+                        case FREQUENT_CROSSINGS -> 6  * 60 * 60 * 1000L;   // 6h
+                        case COORDINATED_GROUP  -> 30 * 60 * 1000L;          // 30min
+                        case BORDER_AVOIDANCE   -> 24 * 60 * 60 * 1000L;   // 24h
+                    };
+
+                    if (now - a.getTimestamp() <= windowMs) {
+                        alarms.add(a);
+                    }
+                });
+
+        return alarms;
+    }
+
+
+    public synchronized List<CepAlarm> getAllAlarmsForVehicle(String plateNumber) {
         List<CepAlarm> alarms = new ArrayList<>();
         cepSession.getObjects(obj -> obj instanceof CepAlarm
-                && ((CepAlarm) obj).getPlateNumber().equals(plateNumber))
+                        && ((CepAlarm) obj).getPlateNumber().equals(plateNumber))
                 .forEach(obj -> alarms.add((CepAlarm) obj));
-
         return alarms;
     }
 

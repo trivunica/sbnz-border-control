@@ -5,7 +5,7 @@ import {
     BorderCrossingRequest,
     BorderCrossingResult,
     CepAlarm,
-    CrossingEvent,
+    CrossingEvent, WarrantCheckResult
 } from '../models';
 
 @Injectable({ providedIn: 'root' })
@@ -29,6 +29,13 @@ export class BorderCrossingService {
     getAlarmsForVehicle(plateNumber: string): Observable<CepAlarm[]> {
         return this.http.get<CepAlarm[]>(
             `${this.base}/alarms/${encodeURIComponent(plateNumber)}`
+        );
+    }
+
+    checkWarrant(documentNumber: string): Observable<WarrantCheckResult> {
+        return this.http.get<WarrantCheckResult>(
+            `${this.base}/warrant-check`,
+            { params: { documentNumber } }
         );
     }
 }

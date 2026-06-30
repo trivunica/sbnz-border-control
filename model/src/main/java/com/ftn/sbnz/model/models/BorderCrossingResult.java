@@ -14,4 +14,5 @@ public class BorderCrossingResult {
     private DriverValidity driverValidity;
     private VehicleValidity vehicleValidity;
     private PermitStatus permitStatus;
+    private RiskAssessment riskAssessment;
 }

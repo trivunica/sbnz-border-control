@@ -1,0 +1,94 @@
+package rules.forwardchaining;
+
+import com.ftn.sbnz.model.models.PastViolationRecord;
+import com.ftn.sbnz.model.models.VehicleAssignment;
+import com.ftn.sbnz.model.models.DriverEmployment;
+import com.ftn.sbnz.model.models.DrivingLicence;
+import com.ftn.sbnz.model.models.VehicleRegistration;
+import com.ftn.sbnz.model.models.VehicleRiskyFlag;
+
+
+query "isVehicleRisky"(String plateNumber)
+    VehicleRiskyFlag(this.plateNumber == plateNumber)
+end
+
+
+query "isDriverDirectlyRisky"(String licenceNumber)
+    PastViolationRecord(
+        driverLicenceNumber == licenceNumber,
+        blocking == true
+    )
+end
+
+
+query "isDriverRisky"(String licenceNumber, Integer $score, String $reason)
+    (
+        PastViolationRecord(
+            driverLicenceNumber == licenceNumber,
+            blocking == true,
+            $vtype : violationType
+        )
+        and Integer($score := intValue) from Integer.valueOf(15)
+        and String($reason := toString) from ("direktno_krsenje:" + $vtype)
+    )
+    or
+    (
+        VehicleAssignment(driverLicenceNumber == licenceNumber, $bPlate : plateNumber)
+        and ?isVehicleRisky($bPlate ;)
+        and Integer($score := intValue) from Integer.valueOf(10)
+        and String($reason := toString) from ("cep_alarm:vozilo=" + $bPlate)
+    )
+    or
+    (
+        VehicleAssignment(driverLicenceNumber == licenceNumber, $cPlate : plateNumber)
+        and VehicleAssignment(
+            $otherDriver : driverLicenceNumber,
+            plateNumber == $cPlate,
+            driverLicenceNumber != licenceNumber
+        )
+        and ?isDriverRisky($otherDriver, 15, $colReason ;)
+        and Integer($score := intValue) from Integer.valueOf(5)
+        and String($reason := toString) from ("kolega_rizican:vozac=" + $otherDriver + ",vozilo=" + $cPlate)
+    )
+end
+
+
+query "isCompanyRisky"(String companyName)
+    DriverEmployment(company == companyName, $licenceNumber : driverLicenceNumber)
+    and
+    ?isDriverRisky($licenceNumber, $score, $reason ;)
+end
+
+
+query "countVehicleAlarms"(String plateNumber, Number $count)
+    VehicleRiskyFlag(this.plateNumber == plateNumber, $count := alarmCount)
+end
+
+
+query "countDriverViolations"(String licenceNumber, Number $count)
+    $count := Number() from accumulate(
+        PastViolationRecord(
+            driverLicenceNumber == licenceNumber,
+            blocking == true,
+            violationDate != null,
+            violationDate.isAfter(java.time.LocalDate.now().minusDays(365))
+        ),
+        count(1)
+    )
+end
+
+
+query "companyHasAlarms"(String companyName)
+    DriverEmployment(company == companyName, $licNum : driverLicenceNumber)
+    and
+    VehicleAssignment(driverLicenceNumber == $licNum, $plate : plateNumber)
+    and
+    VehicleRiskyFlag(this.plateNumber == $plate)
+end
+
+
+query "driverHasCoordinatedAlarm"(String licenceNumber)
+    VehicleAssignment(driverLicenceNumber == licenceNumber, $plate : plateNumber)
+    and
+    VehicleRiskyFlag(this.plateNumber == $plate, hasCoordinatedAlarm == true)
+end

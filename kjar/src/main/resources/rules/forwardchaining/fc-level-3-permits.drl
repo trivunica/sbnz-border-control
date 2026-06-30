@@ -75,7 +75,7 @@ rule "Bilateral permit does not cover route"
         not PermitStatus()
         not Violation(type == ViolationType.MISSING_THIRD_COUNTRY_PERMIT)
     then
-        insert(new Violation(ViolationType.MISSING_THIRD_COUNTRY_PERMIT, "CEMT pravilnik, Čl. XXX", 100.0, false,
+        insert(new Violation(ViolationType.MISSING_THIRD_COUNTRY_PERMIT, "Čl. 5 uredbe o raspodeli stranih dozvola za međunarodni prevoz tereta", 100.0, false,
                              "Bilateralna dozvola ne pokriva robu iz treće zemlje. "
                              + "Zemlja porekla robe: " + $origin
                              + ", zemlja vozača: " + $citizenship
@@ -123,7 +123,7 @@ rule "No valid route permit"
         not PermitStatus()
         not Violation(type == ViolationType.MISSING_THIRD_COUNTRY_PERMIT)
     then
-        insert(new Violation(ViolationType.MISSING_THIRD_COUNTRY_PERMIT, "CEMT pravilnik, Čl. XXX", 100.0, false,
+        insert(new Violation(ViolationType.MISSING_THIRD_COUNTRY_PERMIT, "Čl. 5 uredbe o raspodeli stranih dozvola za međunarodni prevoz tereta", 100.0, false,
                             "Ne postoji nijedna validna dozvola za prevoz na ovoj ruti. Zabrana prelaska do otklanjanja nedostatka."));
         insert(new PermitStatus(ValidityStatus.FORBIDDEN));
 end
