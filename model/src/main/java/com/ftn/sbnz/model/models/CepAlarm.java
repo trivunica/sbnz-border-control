@@ -16,12 +16,23 @@ public class CepAlarm {
     private String message;
     private long timestamp;
     private String crossedAt;
+    private String borderPair;
+
 
     public CepAlarm(CepAlarmType type, String plateNumber, String message, long timestamp) {
         this.type = type;
         this.plateNumber = plateNumber;
         this.message = message;
         this.timestamp = timestamp;
-        this.crossedAt = null;
+    }
+
+
+    public CepAlarm(CepAlarmType type, String plateNumber, String message,
+                    long timestamp, String borderPair) {
+        this.type = type;
+        this.plateNumber = plateNumber;
+        this.message = message;
+        this.timestamp = timestamp;
+        this.borderPair = borderPair;
     }
 }
