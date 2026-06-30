@@ -21,6 +21,9 @@ public class BorderCrossingController {
     @Autowired
     private CepService cepService;
 
+    @Autowired
+    private WarrantCheckService warrantCheckService;
+
 
     @PostMapping("/evaluate")
     public ResponseEntity<BorderCrossingResult> evaluate(
@@ -47,6 +50,13 @@ public class BorderCrossingController {
     public ResponseEntity<List<CepAlarm>> getAlarmsForVehicle(
             @PathVariable String plateNumber) {
         return ResponseEntity.ok(cepService.getAlarmsForVehicle(plateNumber));
+    }
+
+
+    @GetMapping("/warrant-check")
+    public ResponseEntity<WarrantCheckResult> warrantCheck(
+            @RequestParam String documentNumber) {
+        return ResponseEntity.ok(warrantCheckService.check(documentNumber));
     }
 
 }

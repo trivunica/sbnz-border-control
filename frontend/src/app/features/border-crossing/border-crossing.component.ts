@@ -8,7 +8,7 @@ import {
     BorderCrossingResult,
     MrzResult,
     CepAlarm,
-    DriverCertificate, CrossingEvent, Violation
+    DriverCertificate, CrossingEvent, Violation, WarrantCheckResult
 } from '../../core/models';
 import { MrzScannerComponent } from '../mrz-scanner/mrz-scanner.component';
 import { PdfReportService } from '../../core/services/pdf-report.service';
@@ -35,6 +35,10 @@ export class BorderCrossingComponent implements OnInit {
     error = signal<string | null>(null);
     activeSection = signal(0);
     showMrzScanner = signal(false);
+    warrantResult = signal<WarrantCheckResult | null>(null);
+    warrantLoading = signal(false);
+    showArrestModal = signal(false);
+    showStolenModal  = signal(false);
 
     readonly borderCrossings = ['RACA', 'POPOVI', 'SEPAK', 'BRATUNAC', 'KARAKAJ', 'SKELANI'];
 
@@ -63,10 +67,7 @@ export class BorderCrossingComponent implements OnInit {
                 surname: ['', Validators.required],
                 citizenship: ['', Validators.required],
                 foreignCitizen: [false],
-                interpolWarrant: [false],
-                domesticWarrant: [false],
                 photoMatches: [true],
-                documentReportedStolen: [false],
                 hasVisa: [false],
                 hasSupplementaryDocument: [false],
                 financialFunds: [null],
@@ -239,9 +240,6 @@ export class BorderCrossingComponent implements OnInit {
             driver: {
                 photoMatches: true,
                 foreignCitizen: false,
-                interpolWarrant: false,
-                domesticWarrant: false,
-                documentReportedStolen: false,
                 hasVisa: false,
                 hasSupplementaryDocument: false,
             },
@@ -254,6 +252,9 @@ export class BorderCrossingComponent implements OnInit {
         this.result.set(null);
         this.vehicleAlarms.set([]);
         this.error.set(null);
+        this.warrantResult.set(null);
+        this.showArrestModal.set(false);
+        this.showStolenModal.set(false);
         this.activeSection.set(0);
         this.showMrzScanner.set(false);
     }
@@ -337,18 +338,47 @@ export class BorderCrossingComponent implements OnInit {
         this.pdfService.generateReport(res, this.buildRequest());
     }
 
-    private buildRequest(): BorderCrossingRequest {
-        const v = this.form.value;
-        const request: BorderCrossingRequest = {
-            driver: v.driver,
-            drivingLicence: v.drivingLicence,
-            identificationDocument: v.identificationDocument,
-        };
-        if (v.vehicleRegistration?.registrationNumber)
-            request.vehicleRegistration = v.vehicleRegistration;
-        if (v.cmrDocument?.originCountry) request.cmrDocument = v.cmrDocument;
-        return request;
+    goNextFromDocuments(): void {
+        const docNum = this.form.get('identificationDocument.documentNumber')?.value?.trim();
+        if (!docNum) {
+            this.goTo(2);
+            return;
+        }
+
+        this.warrantLoading.set(true);
+        this.warrantResult.set(null);
+
+        this.service.checkWarrant(docNum).subscribe({
+            next: (res) => {
+                this.warrantLoading.set(false);
+                this.warrantResult.set(res);
+
+                if (res.interpolWarrant || res.domesticWarrant) {
+                    this.showArrestModal.set(true);
+                } else if (res.documentReportedStolen) {
+                    this.showStolenModal.set(true);
+                } else {
+                    this.goTo(2);
+                }
+            },
+            error: () => {
+                this.warrantLoading.set(false);
+                this.error.set('Upozorenje: provera potraga nije uspela. Nastavite pažljivo.');
+                this.goTo(2);
+            },
+        });
     }
+
+    closeStolenModal(): void {
+        this.showStolenModal.set(false);
+        this.goTo(2);
+    }
+
+    confirmArrestAndReset(): void {
+        this.showArrestModal.set(false);
+        this.reset();
+    }
+
 
     getRiskClass(): string {
         const level = this.result()?.riskAssessment?.riskLevel;
@@ -387,6 +417,19 @@ export class BorderCrossingComponent implements OnInit {
 
     get certificates(): FormArray {
         return this.form.get('driverCertificates') as FormArray;
+    }
+
+    private buildRequest(): BorderCrossingRequest {
+        const v = this.form.value;
+        const request: BorderCrossingRequest = {
+            driver: v.driver,
+            drivingLicence: v.drivingLicence,
+            identificationDocument: v.identificationDocument,
+        };
+        if (v.vehicleRegistration?.registrationNumber)
+            request.vehicleRegistration = v.vehicleRegistration;
+        if (v.cmrDocument?.originCountry) request.cmrDocument = v.cmrDocument;
+        return request;
     }
 
 }

@@ -32,6 +32,9 @@ public class BorderCrossingService {
     @Autowired
     private CepService cepService;
 
+    @Autowired
+    private WarrantCheckService warrantCheckService;
+
 
     public BorderCrossingResult evaluate(BorderCrossingRequest request) {
         KieSession kieSession = kieContainer.newKieSession("forwardKSession");
@@ -47,6 +50,7 @@ public class BorderCrossingService {
             kieSession.setGlobal("today", LocalDate.now());
             kieSession.setGlobal("ninetyDaysFromNow", LocalDate.now().plusDays(90));
 
+            enrichDriverFlags(request);
             insertStandardFacts(kieSession, request);
             insertBcFacts(kieSession, request);
 
@@ -205,18 +209,22 @@ public class BorderCrossingService {
         return result;
     }
 
+
     private String licenceNumber(BorderCrossingRequest r) {
         return r.getDrivingLicence() != null ? r.getDrivingLicence().getLicenceNumber() : null;
     }
+
 
     private String plate(BorderCrossingRequest r) {
         return r.getVehicleRegistration() != null
                 ? r.getVehicleRegistration().getRegistrationNumber() : null;
     }
 
+
     private String company(BorderCrossingRequest r) {
         return r.getCmrDocument() != null ? r.getCmrDocument().getSenderIdentity() : null;
     }
+
 
     private PastViolationRecord toPastViolation(ViolationHistoryEntity e) {
         PastViolationRecord r = new PastViolationRecord();
@@ -227,5 +235,19 @@ public class BorderCrossingService {
         r.setViolationDate(e.getViolationDate());
         r.setBlocking(e.isBlocking());
         return r;
+    }
+
+
+    private void enrichDriverFlags(BorderCrossingRequest request) {
+        String docNum = request.getIdentificationDocument() != null
+                ? request.getIdentificationDocument().getDocumentNumber() : null;
+        if (docNum == null) return;
+
+        WarrantCheckResult check = warrantCheckService.check(docNum);
+        if (request.getDriver() != null) {
+            request.getDriver().setInterpolWarrant(check.isInterpolWarrant());
+            request.getDriver().setDomesticWarrant(check.isDomesticWarrant());
+            request.getDriver().setDocumentReportedStolen(check.isDocumentReportedStolen());
+        }
     }
 }

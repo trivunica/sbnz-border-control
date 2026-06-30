@@ -94,20 +94,8 @@
               <span>Strani državljanin</span>
             </label>
             <label class="cb-row">
-              <input type="checkbox" formControlName="interpolWarrant" />
-              <span>Interpol potraga</span>
-            </label>
-            <label class="cb-row">
-              <input type="checkbox" formControlName="domesticWarrant" />
-              <span>Domaća potraga</span>
-            </label>
-            <label class="cb-row">
               <input type="checkbox" formControlName="photoMatches" />
               <span>Fotografija odgovara licu</span>
-            </label>
-            <label class="cb-row">
-              <input type="checkbox" formControlName="documentReportedStolen" />
-              <span>Dokument prijavljen kao ukraden</span>
             </label>
             <label class="cb-row">
               <input type="checkbox" formControlName="hasVisa" />
@@ -190,14 +178,27 @@
             </div>
           </div>
 
+
           <div class="section-actions">
             <button type="button" class="btn-back" (click)="goTo(0)">
               <i class="ti ti-arrow-left" aria-hidden="true"></i> Nazad
             </button>
-            <button type="button" class="btn-next" (click)="goTo(2)">
-              Dalje <i class="ti ti-arrow-right" aria-hidden="true"></i>
+
+            <button
+              type="button"
+              class="btn-next"
+              (click)="goNextFromDocuments()"
+              [disabled]="warrantLoading()">
+              <span *ngIf="warrantLoading()">
+                <i class="ti ti-loader-2" style="animation: spin 1s linear infinite;" aria-hidden="true"></i>
+                Provera...
+              </span>
+              <span *ngIf="!warrantLoading()">
+      Dalje <i class="ti ti-arrow-right" aria-hidden="true"></i>
+    </span>
             </button>
           </div>
+
         </section>
 
         <!-- ******************** KORAK 2 - VOZILO ******************** -->
@@ -599,4 +600,84 @@
       </div>
     </div>
   </main>
+
+  <div *ngIf="showArrestModal()" class="warrant-modal-overlay">
+    <div class="warrant-modal warrant-modal--arrest" role="alertdialog" aria-modal="true" aria-labelledby="arrest-title">
+
+      <div class="warrant-modal-header">
+        <i class="ti ti-shield-lock warrant-modal-icon" aria-hidden="true"></i>
+        <h2 id="arrest-title">NALOG ZA HAPŠENJE</h2>
+      </div>
+
+      <div class="warrant-modal-body">
+
+        <div *ngIf="warrantResult()?.interpolWarrant" class="warrant-block warrant-block--interpol">
+          <div class="warrant-badge">
+            <i class="ti ti-world" aria-hidden="true"></i>
+            INTERPOL POTRAGA
+          </div>
+          <p class="warrant-doc">Dokument: <strong>{{ warrantResult()?.documentNumber }}</strong></p>
+          <p class="warrant-reason">{{ warrantResult()?.interpolReason }}</p>
+        </div>
+
+        <div *ngIf="warrantResult()?.domesticWarrant" class="warrant-block warrant-block--domestic">
+          <div class="warrant-badge">
+            <i class="ti ti-building-community" aria-hidden="true"></i>
+            DOMAĆA POTRAGA
+          </div>
+          <p class="warrant-doc">Dokument: <strong>{{ warrantResult()?.documentNumber }}</strong></p>
+          <p class="warrant-reason">{{ warrantResult()?.domesticReason }}</p>
+        </div>
+
+        <p class="warrant-instruction">
+          Lice je potrebno <strong>odmah privesti</strong> i obavestiti nadležne organe.
+          Nakon potvrde, forma će biti resetovana.
+        </p>
+      </div>
+
+      <div class="warrant-modal-footer">
+        <button type="button" class="warrant-modal-btn warrant-modal-btn--arrest" (click)="confirmArrestAndReset()">
+          <i class="ti ti-check" aria-hidden="true"></i>
+          Potvrdi prijem naloga i resetuj formu
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <div *ngIf="showStolenModal()" class="warrant-modal-overlay">
+    <div class="warrant-modal warrant-modal--stolen" role="alertdialog" aria-modal="true" aria-labelledby="stolen-title">
+
+      <div class="warrant-modal-header">
+        <i class="ti ti-alert-triangle warrant-modal-icon" aria-hidden="true"></i>
+        <h2 id="stolen-title">UPOZORENJE</h2>
+      </div>
+
+      <div class="warrant-modal-body">
+
+        <div class="warrant-block warrant-block--stolen">
+          <div class="warrant-badge">
+            <i class="ti ti-file-x" aria-hidden="true"></i>
+            DOKUMENT PRIJAVLJEN KAO
+            {{ warrantResult()?.stolenReason === 'STOLEN' ? 'UKRADEN' : 'IZGUBLJEN' }}
+          </div>
+          <p class="warrant-doc">Broj dokumenta: <strong>{{ warrantResult()?.documentNumber }}</strong></p>
+        </div>
+
+        <p class="warrant-instruction">
+          Dokument je u evidenciji kao
+          <strong>{{ warrantResult()?.stolenReason === 'STOLEN' ? 'ukraden' : 'izgubljen' }}</strong>.
+          Sistem će automatski evidentirati prekršaj. Možete nastaviti proceduru.
+        </p>
+      </div>
+
+      <div class="warrant-modal-footer">
+        <button type="button" class="warrant-modal-btn warrant-modal-btn--stolen" (click)="closeStolenModal()">
+          <i class="ti ti-arrow-right" aria-hidden="true"></i>
+          Nastavi proceduru
+        </button>
+      </div>
+    </div>
+    </div>
 </div>
