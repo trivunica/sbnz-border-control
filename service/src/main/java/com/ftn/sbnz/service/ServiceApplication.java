@@ -35,8 +35,10 @@ public class ServiceApplication {
 		String[] originalDrls = {
                 "rules/forwardchaining/fc-level-1-driver.drl",
                 "rules/forwardchaining/fc-level-2-vehicle.drl",
+                "rules/forwardchaining/bc-risk-factors.drl",
                 "rules/forwardchaining/fc-level-3-permits.drl",
                 "rules/forwardchaining/fc-level-4-decision.drl",
+                "rules/forwardchaining/bc-risk-assessment.drl",
 				"rules/cep/cep-alarms.drl",
 		};
 		for (String path : originalDrls) {

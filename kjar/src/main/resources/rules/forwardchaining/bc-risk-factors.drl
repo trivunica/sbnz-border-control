@@ -1,0 +1,201 @@
+package rules.forwardchaining;
+
+import com.ftn.sbnz.model.models.DrivingLicence;
+import com.ftn.sbnz.model.models.VehicleRegistration;
+import com.ftn.sbnz.model.models.CMRDocument;
+import com.ftn.sbnz.model.models.DriverValidity;
+import com.ftn.sbnz.model.models.RiskAssessment;
+import com.ftn.sbnz.model.models.RiskFactor;
+import com.ftn.sbnz.model.models.CompanyRiskyFlag;
+import com.ftn.sbnz.model.models.Violation;
+import com.ftn.sbnz.model.enums.ValidityStatus;
+import com.ftn.sbnz.model.enums.ViolationType;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import com.ftn.sbnz.model.models.DecisionNode;
+import com.ftn.sbnz.model.models.DecisionTreeBuilder;
+
+
+rule "RF: Vehicle CEP alarm"
+    salience 92
+    when
+        DrivingLicence($licNumber : licenceNumber)
+        VehicleRegistration($plate : registrationNumber)
+        DriverValidity(status != ValidityStatus.ARREST)
+        not RiskAssessment()
+        ?isVehicleRisky($plate ;)
+        ?countVehicleAlarms($plate, $alarmCount ;)
+        eval($alarmCount.intValue() > 0)
+        not RiskFactor(entityId == $plate, proofStep == "cep_alarm")
+        accumulate(
+            RiskFactor(entityId == $plate, description str[startsWith] "CEP alarm"),
+            $existing : count(1)
+        )
+        eval($existing < 3)
+    then
+        insert(new RiskFactor(
+            $plate,
+            10,
+            "CEP alarm na vozilu " + $plate + " [+10 bodova]",
+            "cep_alarm:vozilo=" + $plate
+        ));
+end
+
+
+rule "RF: Coordinated group alarm"
+    salience 92
+    when
+        DrivingLicence($licNumber : licenceNumber)
+        VehicleRegistration($plate : registrationNumber)
+        DriverValidity(status != ValidityStatus.ARREST)
+        not RiskAssessment()
+        ?driverHasCoordinatedAlarm($licNumber ;)
+        not RiskFactor(proofStep == "koordinisani_alarm")
+    then
+        insert(new RiskFactor(
+            $plate,
+            20,
+            "Vozilo vozača ima COORDINATED_GROUP alarm [+20 bodova]",
+            "koordinisani_alarm"
+        ));
+end
+
+
+rule "RF: Driver direct violation"
+    salience 91
+    when
+        DrivingLicence($licNumber : licenceNumber)
+        DriverValidity(status != ValidityStatus.ARREST)
+        not RiskAssessment()
+        ?isDriverRisky($licNumber, 15, $reason ;)
+        eval($reason.startsWith("direktno_krsenje:"))
+        not RiskFactor(entityId == $licNumber, proofStep == $reason)
+        accumulate(
+            RiskFactor(entityId == $licNumber, description str[startsWith] "Blokirajuće kršenje"),
+            $existing : count(1)
+        )
+        eval($existing < 3)
+    then
+        insert(new RiskFactor(
+            $licNumber,
+            15,
+            "Blokirajuće kršenje vozača " + $licNumber + " [+15 bodova]",
+            $reason
+        ));
+end
+
+
+rule "RF: Shared vehicle risky colleague"
+    salience 91
+    when
+        DrivingLicence($licNumber : licenceNumber)
+        DriverValidity(status != ValidityStatus.ARREST)
+        not RiskAssessment()
+        ?isDriverRisky($licNumber, 5, $reason ;)
+        eval($reason.startsWith("kolega_rizican:"))
+        not RiskFactor(entityId == $licNumber, proofStep == $reason)
+    then
+        insert(new RiskFactor(
+            $licNumber,
+            5,
+            "Kolega vozač koji deli vozilo je direktno rizičan [+5 bodova] — " + $reason,
+            $reason
+        ));
+end
+
+
+rule "RF: Company risky flag"
+    salience 90
+    when
+        DrivingLicence($licNumber : licenceNumber)
+        DriverValidity(status != ValidityStatus.ARREST)
+        not RiskAssessment()
+        CompanyRiskyFlag($company : companyName)
+        not RiskFactor(proofStep == "kompanija_rizicna")
+    then
+        insert(new RiskFactor(
+            $company,
+            10,
+            "Kompanija '" + $company + "' je visokorizična [+10 bodova]",
+            "kompanija_rizicna"
+        ));
+end
+
+
+rule "BC Risk: Company is risky via driver chain"
+    salience 93
+    when
+        CMRDocument($company : senderIdentity)
+        ?isCompanyRisky($company ;)
+        not CompanyRiskyFlag()
+    then
+        insert(new CompanyRiskyFlag($company));
+end
+
+
+rule "BC Risk: Compute RiskAssessment from RiskFactors"
+    salience 88
+    when
+        DrivingLicence($lic : licenceNumber)
+        VehicleRegistration($plate : registrationNumber)
+        CMRDocument($company : senderIdentity)
+        DriverValidity(status != ValidityStatus.ARREST)
+        not RiskAssessment()
+        accumulate(
+            RiskFactor($s: score, $d: description),
+            $totalScore  : sum($s),
+            $descriptions: collectList($d)
+        )
+        $factors : List() from collect(RiskFactor())
+    then
+        insert(new RiskAssessment(
+            $totalScore.intValue(),
+            $totalScore.intValue() >= 60 ? "HIGH" : ($totalScore.intValue() >= 30 ? "MEDIUM" : "LOW"),
+            (List<String>) $descriptions,
+            DecisionTreeBuilder.buildRiskTree($plate, $lic, $company, $totalScore.intValue(), $factors),
+            $plate
+        ));
+end
+
+
+rule "BC Risk: High risk triggers blocking violation"
+    salience 85
+    when
+        RiskAssessment(
+            riskLevel == "HIGH",
+            $score   : riskScore,
+            $factors : riskFactors
+        )
+        not Violation(type == ViolationType.HIGH_RISK_ENTITY)
+    then
+        insert(new Violation(
+            ViolationType.HIGH_RISK_ENTITY,
+            "Pravilnik o graničnoj kontroli, Čl. 23 - Pojačana kontrola visokorizičnih subjekata",
+            0.0,
+            false,
+            "Sistem je utvrdio visok rizik (skor: " + $score + "/125). Faktori: "
+                + String.join("; ", (List<String>) $factors)
+        ));
+end
+
+
+rule "BC Risk: Medium risk triggers warning violation"
+    salience 85
+    when
+        RiskAssessment(
+            riskLevel == "MEDIUM",
+            $score : riskScore
+        )
+        not Violation(type == ViolationType.HIGH_RISK_ENTITY)
+        not Violation(type == ViolationType.MEDIUM_RISK_ENTITY)
+    then
+        insert(new Violation(
+            ViolationType.MEDIUM_RISK_ENTITY,
+            "Pravilnik o graničnoj kontroli, Čl. 22 - Evidencija rizičnih subjekata",
+            0.0,
+            true,
+            "Sistem je utvrdio srednji rizik (skor: " + $score + "/125). Preporučena pojačana fizička kontrola."
+        ));
+end

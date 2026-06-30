@@ -22,4 +22,7 @@ public class BorderCrossingRequest {
     private CMRDocument cmrDocument;
     private List<TransportPermit> transportPermits;
     private List<DriverCertificate> driverCertificates;
+    private List<PastViolationRecord> pastViolations;
+    private List<String> companyDriverLicences;  // other drivers from the same company
+    private List<String> otherVehiclePlates;   // other vehicles registered to the same driver
 }
